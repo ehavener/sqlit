@@ -25,6 +25,8 @@ func check(e error) {
 
 func main() {
 
+	removeContents("tmp")
+
 	if len(os.Args) > 1 {
 		// SQLFilename := os.Args[2]
 		// fileContents, err := ioutil.ReadFile("tmp/" + SQLFilename)
@@ -122,8 +124,6 @@ func main() {
 		}
 	}
 
-	fmt.Println("Raw:")
-
 	// join lines that aren't delimited
 	linesBreaksRemoved := make([]string, 0, 1000)
 	i := 0
@@ -143,12 +143,10 @@ func main() {
 		i++
 	}
 
-	fmt.Println("After:", " ")
-	fmt.Print("\n")
-
 	// now that statements are sanitized, generate Tokens
 	// tokenSequences := make([]string, 0, 1000)
 
+	fmt.Println("")
 	for _, line := range linesBreaksRemoved {
 		onLine(line)
 	}
@@ -169,7 +167,6 @@ func main() {
 	// }
 
 	fmt.Println("...done.")
-	removeContents("tmp")
 	os.Exit(0)
 }
 
@@ -182,7 +179,7 @@ func onLine(line string) {
 	function := generator.Generate(statement)
 	io.Execute()
 	printFunction(function)
-	printStatement(statement)
+	// printStatement(statement)
 }
 
 func printStatement(statement tokenizer.Statement) {

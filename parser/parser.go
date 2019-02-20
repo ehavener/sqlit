@@ -152,6 +152,7 @@ func parseDropTable(statement tokenizer.Statement) tokenizer.Statement {
 
 func parseCreateTable(statement tokenizer.Statement) tokenizer.Statement {
 	setSpecialNameIfTokenExists(statement, 2, specialTypes["TABLE_NAME"])
+
 	i := 3
 	for i < len(statement.Tokens) {
 		if i%2 == 0 {
@@ -167,8 +168,10 @@ func parseCreateTable(statement tokenizer.Statement) tokenizer.Statement {
 
 func parseAlterTable(statement tokenizer.Statement) tokenizer.Statement {
 	setSpecialNameIfTokenExists(statement, 2, specialTypes["TABLE_NAME"])
-	if statement.Tokens[3].Name == "ADD" {
+	if statement.Tokens[3].Special == "ADD" {
 		setSpecialNameIfTokenExists(statement, 3, specialTypes["ADD_COL"])
+		setSpecialNameIfTokenExists(statement, 4, specialTypes["COL_TYPE"])
+		setSpecialNameIfTokenExists(statement, 5, specialTypes["COL_NAME"])
 	}
 	return statement
 }
