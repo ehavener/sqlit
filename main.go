@@ -1,14 +1,20 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"io/ioutil"
+	// "log"
 	"os"
-	"sqlit/tokenizer"
 	"strings"
-	// "bufio"
 	// "io"
-	// "go/scanner"
+	// // "go/scanner"
+	// "os/exec"
+	"path/filepath"
+	"sqlit/generator"
+	"sqlit/io"
+	"sqlit/parser"
+	"sqlit/tokenizer"
 )
 
 func check(e error) {
@@ -18,17 +24,31 @@ func check(e error) {
 }
 
 func main() {
-	filepath := "tmp/PA1_test.sql"
+
+	if len(os.Args) > 1 {
+		// SQLFilename := os.Args[2]
+		// fileContents, err := ioutil.ReadFile("tmp/" + SQLFilename)
+		// check(err)
+
+		// runSQLScript()
+		launchConsole()
+	} else {
+		// launchConsole()
+	}
+
+	// fileContents, err := ioutil.ReadFile("tmp/PA1_test.sql")
+
+	// filepath := "tmp/PA2_test.sql"
 	// somestring := tokenizer.GetString()
 
 	// Slurp file's entire contents to memory
-	fileContents, err := ioutil.ReadFile("tmp/PA2_test.sql")
+	fileContents, err := ioutil.ReadFile("PA1_test.sql")
 	check(err)
 	// fmt.Print(string(fileContents))
 
 	// More control over which parts of file are read
-	f, err := os.Open(filepath)
-	check(err)
+	// f, err := os.Open(filepath)
+	// check(err)
 
 	// Read some bytes from the beginning of the file. Allow up to 5 to be read but also note how many actually were read.
 	// b1 := make([]byte, 5)
@@ -64,11 +84,11 @@ func main() {
 
 	// Close the file when you’re done (usually this would be scheduled immediately after Opening with defer).
 
-	f.Close()
+	// f.Close()
 
 	// Open the test file for reading
 	// sqlFile, err := os.Open(filepath)
-	check(err)
+	// check(err)
 
 	// sqlFileReader := bufio.NewReader(sqlFile)
 	// bufStr := sqlFileReader.ReadString(' ')
@@ -102,14 +122,20 @@ func main() {
 		}
 	}
 
+	fmt.Println("Raw:")
+
 	// join lines that aren't delimited
 	linesBreaksRemoved := make([]string, 0, 1000)
 	i := 0
 	for _, line := range linesCarridgeReturnsRemoved {
+
+		fmt.Println(line)
+
 		if strings.HasSuffix(line, ";") == true {
+			line = strings.Replace(line, ";", "", -1)
 			linesBreaksRemoved = append(linesBreaksRemoved, line)
 		} else if strings.HasSuffix(line, ";") == false {
-			if line != EXIT {
+			if strings.EqualFold(line, EXIT) == false {
 				a := []string{line, linesCarridgeReturnsRemoved[i+1]}
 				linesCarridgeReturnsRemoved[i+1] = strings.Join(a, "")
 			}
@@ -117,16 +143,22 @@ func main() {
 		i++
 	}
 
+	fmt.Println("After:", " ")
+	fmt.Print("\n")
+
 	// now that statements are sanitized, generate Tokens
-	tokenSequences := make([]string, 0, 1000)
+	// tokenSequences := make([]string, 0, 1000)
+
 	for _, line := range linesBreaksRemoved {
-		tokenSequences = append(linesBreaksRemoved, tokenizer.GetTokenSequence(line))
+		onLine(line)
 	}
 
+	// launchConsole()
+
 	// print
-	for _, tokenSeq := range tokenSequences {
-		fmt.Println(tokenSeq)
-	}
+	// for _, tokenSeq := range tokenSequences {
+	// fmt.Println(tokenSeq)
+	// }
 
 	// Bind sqlfiledata to string array
 	// testArray := strings.Fields(fileContentsString)
@@ -135,6 +167,88 @@ func main() {
 	// for _, v := range testArray {
 	// fmt.Println(v)
 	// }
+
+	fmt.Println("...done.")
+	removeContents("tmp")
+	os.Exit(0)
+}
+
+func onLine(line string) {
+	statements := make([]tokenizer.Statement, 1000)
+
+	statement := tokenizer.TokenizeStatement(line)
+	statements = append(statements, statement)
+	statement = parser.ParseStatement(statement)
+	function := generator.Generate(statement)
+	io.Execute()
+	printFunction(function)
+	printStatement(statement)
+}
+
+func printStatement(statement tokenizer.Statement) {
+	fmt.Print("type	", statement.Type, "\n")
+	for _, token := range statement.Tokens {
+		tokenizer.PrintToken(token)
+		fmt.Print("\n")
+	}
+
+	fmt.Print("\n")
+}
+
+func printFunction(function generator.Function) {
+	// fmt.Print("\n")
+}
+
+func launchConsole() {
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Println("Simple Shell")
+	fmt.Println("---------------------")
+
+	for {
+		fmt.Print("🔥 ")
+		line, _ := reader.ReadString('\n')
+		// convert CRLF to LF
+		line = strings.Replace(line, "\n", "", -1)
+
+		if len(line) == 0 {
+			// cmd := exec.Command("go run main.go", "1")
+			// log.Printf("Running command and waiting for it to finish...")
+			// err := cmd.Run()
+			// log.Printf("Command finished with error: %v", err)
+			os.Exit(1)
+		}
+
+		onLine(line)
+
+		if strings.Compare("hi", line) == 0 {
+			fmt.Println("hello, Yourself")
+		}
+
+	}
+}
+
+func runSQLScript() {
+
+}
+
+// debugging helper to clear a dir - https://stackoverflow.com/a/33451503/7977208
+func removeContents(dir string) error {
+	d, err := os.Open(dir)
+	if err != nil {
+		return err
+	}
+	defer d.Close()
+	names, err := d.Readdirnames(-1)
+	if err != nil {
+		return err
+	}
+	for _, name := range names {
+		err = os.RemoveAll(filepath.Join(dir, name))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // SEMICOLON delimiter
