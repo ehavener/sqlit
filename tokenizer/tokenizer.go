@@ -2,64 +2,17 @@ package tokenizer
 
 import (
 	"fmt"
-	// "io/ioutil"
-	// "os"
-	// "sqlit/tokenizer"
 	"strings"
-	// "bufio"
-	// "io"
-	// "go/scanner"
 )
 
-/*
-var keywords = map[string]int{
-	"add":      ADD,
-	"against":  AGAINST,
-	"alter":    ALTER,
-	"create":   CREATE,
-	"database": DATABASE,
-	"drop":     DROP,
-	"float":    FLOAT,
-	"from":     FROM,
-	"insert":   INSERT,
-	"int":      INT,
-	"into":     INTO,
-	"select":   SELECT,
-	"set":      SET,
-	"table":    TABLE,
-	"update":   UPDATE,
-	"use":      USE,
-	"values":   VALUES,
-	"varchar":  VARCHAR,
-	"where":    WHERE,
+// A Token represents a SQL word
+type Token struct {
+	Name    string
+	Special string
 }
-*/
 
-// Constants
-
-/*
-const (
-	CREATE   = 0
-	DROP     = 1
-	USE      = 2
-	DATABASE = 3
-	TABLE    = 4
-	special  = 5
-)
-*/
-/*
-var kw = map[string]int{
-	"CREATE":   CREATE,
-	"DROP":     DROP,
-	"USE":      USE,
-	"DATABASE": DATABASE,
-	"TABLE":    TABLE,
-	"special":  special,
-}
-*/
-
-// langWords are general classes for tokens
-var langWords = [11]string{
+// Names are general classes for tokens
+var Names = [11]string{
 	"CREATE",
 	"DROP",
 	"USE",
@@ -73,12 +26,6 @@ var langWords = [11]string{
 	"special",
 }
 
-// A Token represents a SQL word
-type Token struct {
-	Name    string
-	Special string
-}
-
 // A Statement is an array of tokens and a general class of meaning
 type Statement struct {
 	Tokens []Token
@@ -87,10 +34,9 @@ type Statement struct {
 
 // TokenizeStatement breaks a string of SQL into a statement
 func TokenizeStatement(rawStatement string) Statement {
-
 	rawWords := strings.Fields(rawStatement)
 
-	tokens := make([]Token, 0, 100000)
+	tokens := make([]Token, 0, len(rawWords))
 
 	for _, rawWord := range rawWords {
 		tokens = append(tokens, TokenizeWord(rawWord))
@@ -103,16 +49,16 @@ func TokenizeStatement(rawStatement string) Statement {
 
 // TokenizeWord maps a string to a token and classifies it
 func TokenizeWord(word string) Token {
-	for _, langWord := range langWords {
-		if strings.EqualFold(word, langWord) {
-			return Token{Name: langWord}
+	for _, name := range Names {
+		if strings.EqualFold(word, name) {
+			return Token{Name: name}
 		}
 	}
 
 	return Token{Name: "special", Special: word}
 }
 
-// PrintToken is used to debug statement properties
+// PrintStatement is used to debug statement properties
 func PrintStatement(statement Statement) {
 	fmt.Print("type	", statement.Type, "\n")
 	for _, token := range statement.Tokens {

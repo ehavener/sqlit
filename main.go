@@ -46,23 +46,27 @@ func main() {
 
 }
 
-// launchConsole loops for standard input, does some basic filtering
+// launchConsole loops for standard input, does some basic
+// filtering to allow for multi line statements
 func launchConsole() {
 	reader := bufio.NewReader(os.Stdin)
 	partialStatementBuffer := make([]string, 0, 1000)
 
+	fmt.Println("🔥")
+
 	for {
-		fmt.Print("🔥 ")
+		fmt.Print("sqlit> ")
+
 		line, _ := reader.ReadString('\n')
+
+		line = filterComment(line)
+		line = filterNewline(line)
+		line = filterReturn(line)
 
 		if strings.EqualFold(".EXIT", line) == true {
 			fmt.Println("All done.")
 			os.Exit(0)
 		}
-
-		line = filterComment(line)
-		line = filterNewline(line)
-		line = filterReturn(line)
 
 		if len(line) <= 1 {
 			continue
@@ -83,22 +87,41 @@ func launchConsole() {
 	}
 }
 
-// processLine preforms all main operations
+// processLine goes through all the main functionality by transforming input into operations
 func processLine(line string) {
-	statements := make([]tokenizer.Statement, 1000)
 
+	// Break our line of input up into tokens
 	statement := tokenizer.TokenizeStatement(line)
 
-	statements = append(statements, statement)
-
+	// Give them some syntactical meaning
 	statement = parser.ParseStatement(statement)
 
-	generator.Generate(statement)
+	// Generate a set of assertions and a set of executions for our query
+	operation := generator.Generate(statement)
+
+	// Make sure our query is valid before we request resources
+	err := operation.Assert()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	// Finally, execute our query
+	success, err := operation.Invoke()
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println(success)
+	}
 
 	if *DebugPtr {
 		tokenizer.PrintStatement(statement)
 	}
 }
+
+//
+//			Helper functions below
+//
 
 func filterComment(line string) string {
 	if strings.HasPrefix(line, "--") {

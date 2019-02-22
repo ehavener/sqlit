@@ -1,11 +1,8 @@
 package io
 
-// A separate B-tree is used for each table and index in the database.
-// All B-trees are stored in the same disk file.
+// TODO: rename to utility
 
 import (
-	// "bufio"
-	// "fmt"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -29,14 +26,21 @@ func CheckIfDatabaseExists(name string) bool {
 }
 
 // CreateDatabase ...
-func CreateDatabase(name string) {
-	os.Mkdir(path+name, os.ModePerm)
+func CreateDatabase(name string) error {
+	err := os.Mkdir(path+name, os.ModePerm)
+	return err
 }
 
 // UseDatabase ...
 func UseDatabase(name string) {
 	database = name
 	return
+}
+
+// DeleteDatabase ...
+func DeleteDatabase(name string) error {
+	err := os.Remove(path + database + "/" + name)
+	return err
 }
 
 // CheckIfAnyDatabaseIsInUse ...
@@ -60,6 +64,7 @@ func CheckIfTableExists(name string) bool {
 func CreateTable(name string, columns []string, constraints []string) {
 	f, err := os.Create(path + database + "/" + name + ext2)
 	check(err)
+
 	defer f.Close()
 
 	for i := 0; i < len(columns); i++ {
@@ -90,12 +95,6 @@ func AlterTable(name string, method string, column string, constraint string) st
 	}
 
 	return SelectAll(name)
-}
-
-// DeleteDatabase ...
-func DeleteDatabase(name string) {
-	err := os.Remove(path + database + "/" + name)
-	check(err)
 }
 
 // SelectAll ...

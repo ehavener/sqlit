@@ -1,27 +1,35 @@
 package parser
 
 import (
-	// "fmt"
 	"sqlit/tokenizer"
-	// "strings"
 )
 
-// consts ...
-const (
-	CREATE   = "CREATE"
-	DROP     = "DROP"
-	USE      = "USE"
-	DATABASE = "DATABASE"
-	TABLE    = "TABLE"
-	INSERT   = "INSERT"
-	ALTER    = "ALTER"
-	DELETE   = "DELETE"
-	SELECT   = "SELECT"
-	LITERAL  = "LITERAL"
-	special  = "special"
-)
+var names = map[string]string{
+	"CREATE":   "CREATE",
+	"DROP":     "DROP",
+	"USE":      "USE",
+	"DATABASE": "DATABASE",
+	"TABLE":    "TABLE",
+	"INSERT":   "INSERT",
+	"ALTER":    "ALTER",
+	"SELECT":   "SELECT",
+	"DELETE":   "DELETE",
+	"LITERAL":  "LITERAL",
+	"special":  "special",
+}
 
-var statementTypes = map[string]string{
+var specialNames = map[string]string{
+	"DATABASE_NAME": "DATABASE_NAME",
+	"TABLE_NAME":    "TABLE_NAME",
+	"COL_NAME":      "COL_NAME",
+	"COL_TYPE":      "COL_TYPE",
+	"ADD_COL":       "ADD_COL",
+	"ALL":           "ALL",
+	"FROM":          "FROM",
+}
+
+// Types are general classes for statements
+var Types = map[string]string{
 	"CREATE_DATABASE": "CREATE_DATABASE",
 	"DROP_DATABASE":   "DROP_DATABASE",
 	"USE_DATABASE":    "USE_DATABASE",
@@ -33,101 +41,89 @@ var statementTypes = map[string]string{
 	"DELETE":          "DELETE",
 }
 
-var specialTypes = map[string]string{
-	"DATABASE_NAME": "DATABASE_NAME",
-	"TABLE_NAME":    "TABLE_NAME",
-	"COL_NAME":      "COL_NAME",
-	"COL_TYPE":      "COL_TYPE",
-	"ADD_COL":       "ADD_COL",
-	"ALL":           "ALL",
-	"FROM":          "FROM",
-}
-
 // ParseStatement ....
 func ParseStatement(statement tokenizer.Statement) tokenizer.Statement {
+	// TODO: statement = constructParseTree(statement)
 	statement = inferStatementType(statement)
-	// TODO // statement = constructParseTree(statement)
-	statement = inferTokenSpecialTypes(statement)
+	statement = inferTokenspecialNames(statement)
 	return statement
 }
 
-// inferStatementType infers a class of meaning based on the beginning of a statement
-func inferStatementType(statement tokenizer.Statement) tokenizer.Statement {
+// TODO: a parse tree might be worthwhile for complex queries instead of all these conditionals
+// func constructParseTree() {}
 
+// inferStatementType infers a statement's general type based on how it begins
+func inferStatementType(statement tokenizer.Statement) tokenizer.Statement {
 	if len(statement.Tokens) < 2 {
 		return statement
 	}
 
-	// DATABASE
-	if statement.Tokens[0].Name == CREATE && statement.Tokens[1].Name == DATABASE {
-		statement.Type = statementTypes["CREATE_DATABASE"]
+	if statement.Tokens[0].Name == names["CREATE"] && statement.Tokens[1].Name == names["DATABASE"] {
+		statement.Type = Types["CREATE_DATABASE"]
 		return statement
 	}
 
-	if statement.Tokens[0].Name == DROP && statement.Tokens[1].Name == DATABASE {
-		statement.Type = statementTypes["DROP_DATABASE"]
+	if statement.Tokens[0].Name == names["DROP"] && statement.Tokens[1].Name == names["DATABASE"] {
+		statement.Type = Types["DROP_DATABASE"]
 		return statement
 	}
 
-	if statement.Tokens[0].Name == USE {
-		statement.Type = statementTypes["USE_DATABASE"]
+	if statement.Tokens[0].Name == names["USE"] {
+		statement.Type = Types["USE_DATABASE"]
 		return statement
 	}
 
-	if statement.Tokens[0].Name == CREATE && statement.Tokens[1].Name == TABLE {
-		statement.Type = statementTypes["CREATE_TABLE"]
+	if statement.Tokens[0].Name == names["CREATE"] && statement.Tokens[1].Name == names["TABLE"] {
+		statement.Type = Types["CREATE_TABLE"]
 		return statement
 	}
 
-	if statement.Tokens[0].Name == DROP && statement.Tokens[1].Name == TABLE {
-		statement.Type = statementTypes["DROP_TABLE"]
+	if statement.Tokens[0].Name == names["DROP"] && statement.Tokens[1].Name == names["TABLE"] {
+		statement.Type = Types["DROP_TABLE"]
 		return statement
 	}
 
-	if statement.Tokens[0].Name == ALTER && statement.Tokens[1].Name == TABLE {
-		statement.Type = statementTypes["ALTER_TABLE"]
+	if statement.Tokens[0].Name == names["ALTER"] && statement.Tokens[1].Name == names["TABLE"] {
+		statement.Type = Types["ALTER_TABLE"]
 		return statement
 	}
 
-	if statement.Tokens[0].Name == INSERT {
-		statement.Type = statementTypes["INSERT"]
+	if statement.Tokens[0].Name == names["INSERT"] {
+		statement.Type = Types["INSERT"]
 		return statement
 	}
 
-	if statement.Tokens[0].Name == SELECT {
-		statement.Type = statementTypes["SELECT"]
+	if statement.Tokens[0].Name == names["SELECT"] {
+		statement.Type = Types["SELECT"]
 		return statement
 	}
 
-	if statement.Tokens[0].Name == DELETE {
-		statement.Type = statementTypes["DELETE"]
+	if statement.Tokens[0].Name == names["DELETE"] {
+		statement.Type = Types["DELETE"]
 		return statement
 	}
 
 	return statement
 }
 
-// TODO a parse tree might be worthwhile for complex queries
-// func constructParseTree()
-
-// inferTokenSpecialTypes infers contextual token types
-func inferTokenSpecialTypes(statement tokenizer.Statement) tokenizer.Statement {
+// inferTokenspecialNames infers the meaning of remaining tokens in a statement
+func inferTokenspecialNames(statement tokenizer.Statement) tokenizer.Statement {
 	switch statement.Type {
-	case statementTypes["CREATE_DATABASE"]:
+	case Types["CREATE_DATABASE"]:
 		statement = parseCreateDatabase(statement)
-	case statementTypes["DROP_DATABASE"]:
+	case Types["DROP_DATABASE"]:
 		statement = parseDropDatabase(statement)
-	case statementTypes["USE_DATABASE"]:
+	case Types["USE_DATABASE"]:
 		statement = parseUseDatabase(statement)
-	case statementTypes["CREATE_TABLE"]:
+	case Types["CREATE_TABLE"]:
 		statement = parseCreateTable(statement)
-	case statementTypes["ALTER_TABLE"]:
+	case Types["ALTER_TABLE"]:
 		statement = parseAlterTable(statement)
-	case statementTypes["DROP_TABLE"]:
+	case Types["DROP_TABLE"]:
 		statement = parseDropTable(statement)
-	case statementTypes["INSERT"]:
+	case Types["INSERT"]:
 		statement = parseInsert(statement)
-	case statementTypes["SELECT"]:
+	case Types["SELECT"]:
 		statement = parseSelect(statement)
 	}
 
@@ -135,34 +131,34 @@ func inferTokenSpecialTypes(statement tokenizer.Statement) tokenizer.Statement {
 }
 
 func parseCreateDatabase(statement tokenizer.Statement) tokenizer.Statement {
-	setSpecialNameIfTokenExists(statement, 2, specialTypes["DATABASE_NAME"])
+	setSpecialNameIfTokenExists(statement, 2, specialNames["DATABASE_NAME"])
 	return statement
 }
 
 func parseDropDatabase(statement tokenizer.Statement) tokenizer.Statement {
-	setSpecialNameIfTokenExists(statement, 2, specialTypes["DATABASE_NAME"])
+	setSpecialNameIfTokenExists(statement, 2, specialNames["DATABASE_NAME"])
 	return statement
 }
 
 func parseUseDatabase(statement tokenizer.Statement) tokenizer.Statement {
-	setSpecialNameIfTokenExists(statement, 1, specialTypes["DATABASE_NAME"])
+	setSpecialNameIfTokenExists(statement, 1, specialNames["DATABASE_NAME"])
 	return statement
 }
 
 func parseDropTable(statement tokenizer.Statement) tokenizer.Statement {
-	setSpecialNameIfTokenExists(statement, 2, specialTypes["TABLE_NAME"])
+	setSpecialNameIfTokenExists(statement, 2, specialNames["TABLE_NAME"])
 	return statement
 }
 
 func parseCreateTable(statement tokenizer.Statement) tokenizer.Statement {
-	setSpecialNameIfTokenExists(statement, 2, specialTypes["TABLE_NAME"])
+	setSpecialNameIfTokenExists(statement, 2, specialNames["TABLE_NAME"])
 
 	i := 3
 	for i < len(statement.Tokens) {
 		if i%2 == 0 {
-			setSpecialNameIfTokenExists(statement, i, specialTypes["COL_TYPE"])
+			setSpecialNameIfTokenExists(statement, i, specialNames["COL_TYPE"])
 		} else {
-			setSpecialNameIfTokenExists(statement, i, specialTypes["COL_NAME"])
+			setSpecialNameIfTokenExists(statement, i, specialNames["COL_NAME"])
 		}
 		i++
 	}
@@ -171,11 +167,11 @@ func parseCreateTable(statement tokenizer.Statement) tokenizer.Statement {
 }
 
 func parseAlterTable(statement tokenizer.Statement) tokenizer.Statement {
-	setSpecialNameIfTokenExists(statement, 2, specialTypes["TABLE_NAME"])
+	setSpecialNameIfTokenExists(statement, 2, specialNames["TABLE_NAME"])
 	if statement.Tokens[3].Special == "ADD" {
-		setSpecialNameIfTokenExists(statement, 3, specialTypes["ADD_COL"])
-		setSpecialNameIfTokenExists(statement, 4, specialTypes["COL_TYPE"])
-		setSpecialNameIfTokenExists(statement, 5, specialTypes["COL_NAME"])
+		setSpecialNameIfTokenExists(statement, 3, specialNames["ADD_COL"])
+		setSpecialNameIfTokenExists(statement, 4, specialNames["COL_TYPE"])
+		setSpecialNameIfTokenExists(statement, 5, specialNames["COL_NAME"])
 	}
 	return statement
 }
@@ -183,12 +179,12 @@ func parseAlterTable(statement tokenizer.Statement) tokenizer.Statement {
 // https://www.sqlite.org/draft/syntaxdiagrams.html#select-stmt
 func parseSelect(statement tokenizer.Statement) tokenizer.Statement {
 	if statement.Tokens[1].Special == "*" {
-		setSpecialNameIfTokenExists(statement, 1, specialTypes["ALL"])
+		setSpecialNameIfTokenExists(statement, 1, specialNames["ALL"])
 	}
 
 	if statement.Tokens[2].Special == "FROM" {
-		setSpecialNameIfTokenExists(statement, 2, specialTypes["FROM"])
-		setSpecialNameIfTokenExists(statement, 3, specialTypes["TABLE_NAME"])
+		setSpecialNameIfTokenExists(statement, 2, specialNames["FROM"])
+		setSpecialNameIfTokenExists(statement, 3, specialNames["TABLE_NAME"])
 	}
 	return statement
 }
