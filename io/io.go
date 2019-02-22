@@ -19,12 +19,6 @@ const (
 
 var database string
 
-// Execute ...
-func Execute() {
-	// CreateDatabase("db_1")
-	// deleteDatabase("hello_io")
-}
-
 // CheckIfDatabaseExists ...
 func CheckIfDatabaseExists(name string) bool {
 	_, err := os.Stat(path + name)
@@ -37,10 +31,6 @@ func CheckIfDatabaseExists(name string) bool {
 // CreateDatabase ...
 func CreateDatabase(name string) {
 	os.Mkdir(path+name, os.ModePerm)
-
-	// f, err := os.Create(path + name + ext)
-	// check(err)
-	//	defer f.Close()
 }
 
 // UseDatabase ...

@@ -54,6 +54,10 @@ func ParseStatement(statement tokenizer.Statement) tokenizer.Statement {
 // inferStatementType infers a class of meaning based on the beginning of a statement
 func inferStatementType(statement tokenizer.Statement) tokenizer.Statement {
 
+	if len(statement.Tokens) < 2 {
+		return statement
+	}
+
 	// DATABASE
 	if statement.Tokens[0].Name == CREATE && statement.Tokens[1].Name == DATABASE {
 		statement.Type = statementTypes["CREATE_DATABASE"]

@@ -112,6 +112,17 @@ func TokenizeWord(word string) Token {
 	return Token{Name: "special", Special: word}
 }
 
+// PrintToken is used to debug statement properties
+func PrintStatement(statement Statement) {
+	fmt.Print("type	", statement.Type, "\n")
+	for _, token := range statement.Tokens {
+		PrintToken(token)
+		fmt.Print("\n")
+	}
+
+	fmt.Print("\n")
+}
+
 // PrintToken is used to debug token properties
 func PrintToken(token Token) {
 	fmt.Print("	", token.Name, " ")
