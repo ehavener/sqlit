@@ -23,6 +23,8 @@ var DebugPtr *bool
 
 func main() {
 
+	createTmpDirectory()
+
 	scriptPtr = flag.String("script", "", "run a SQL script from file in dir sqlit/")
 
 	cleanPtr = flag.Bool("clean", false, "deletes all previously created databases in sqlit/tmp")
@@ -97,7 +99,7 @@ func processLine(line string) {
 	// Give them some syntactical meaning
 	statement = parser.ParseStatement(statement)
 
-	// Generate a set of assertions and a set of executions for our query
+	// Generate a function of assertions and a function of executions for our query
 	operation := generator.Generate(statement)
 
 	// Make sure our query is valid before we request resources
@@ -123,6 +125,14 @@ func processLine(line string) {
 //
 //			Helper functions below
 //
+
+func createTmpDirectory() {
+	_, err := os.Stat("tmp/")
+	if os.IsNotExist(err) {
+		err := os.Mkdir("tmp/", os.ModePerm)
+		check(err)
+	}
+}
 
 func filterComment(line string) string {
 	if strings.HasPrefix(line, "--") {
