@@ -1,4 +1,6 @@
-// Package tokenizer ... 
+/* UNR CS 457 | SPRING 2019 | emerson@nevada.unr.edu */
+
+// Package tokenizer transforms a string of SQL into a new Statement structure
 package tokenizer
 
 import (
@@ -58,6 +60,10 @@ func TokenizeWord(word string) Token {
 
 	return Token{Name: "special", Special: word}
 }
+
+//
+//			Helper functions
+//
 
 // PrintStatement is used to debug statement properties
 func PrintStatement(statement Statement) {

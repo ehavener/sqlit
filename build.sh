@@ -1,3 +1,4 @@
+# https://gist.github.com/DimaKoz
 #Before we can use the script, we have to make it executable with the chmod command:
 #chmod +x ./go-executable-build.sh
 #then we can use it  ./go-executable-build.sh yourpackage

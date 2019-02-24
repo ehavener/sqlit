@@ -1,4 +1,7 @@
-// Package parser ... 
+/* UNR CS 457 | SPRING 2019 | emerson@nevada.unr.edu */
+
+// Package parser takes a Statement (tokenized SQL) and labels it 
+// with a Type. It also lables individual tokens.
 package parser
 
 import (
@@ -197,6 +200,10 @@ func parseInsert(statement tokenizer.Statement) tokenizer.Statement {
 func parseDelete(statement tokenizer.Statement) tokenizer.Statement {
 	return statement
 }
+
+//
+//			Helper functions
+//
 
 func setSpecialNameIfTokenExists(statement tokenizer.Statement, i int, name string) {
 	if len(statement.Tokens) >= i {

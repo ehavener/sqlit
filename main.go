@@ -1,4 +1,8 @@
-// Package main ...
+/* UNR CS 457 | SPRING 2019 | emerson@nevada.unr.edu */
+
+// Package main is the program's core, providing a REPL
+// for query input (launchConsole()) as well the a main
+// loop which transforms queries down to disk operations (processLine()).
 package main
 
 import (
@@ -99,7 +103,7 @@ func processLine(line string) {
 	// Give them some syntactical meaning
 	statement = parser.ParseStatement(statement)
 
-	// Generate a function of assertions and a function of executions for our query
+	// Generate a function of assertions and a function of operations for our query
 	operation := generator.Generate(statement)
 
 	// Make sure our query is valid before we request resources
@@ -123,7 +127,7 @@ func processLine(line string) {
 }
 
 //
-//			Helper functions below
+//			Helper functions
 //
 
 func createTmpDirectory() {
@@ -187,6 +191,7 @@ func removeContents(dir string) error {
 
 // runSQLScript loads a SQL script
 // TODO: this needs to be refactored and might not work
+// plus I think out could just cat <  into the prompt somehow
 func runSQLScript(fileContents []byte) {
 
 	// Make string array from fileData by line

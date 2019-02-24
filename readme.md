@@ -1,128 +1,67 @@
-<!-- markdownlint-disable -->
+<!-- markdownlint-disablee -->
 # CS 457 Programming Assignment 1: Metadata Management
 
 ## Running
+The quickest way to test the program is to just run a precompiled build
 
-### Running from source
+```sh
+> cd sqlit/
+> ./sqlit-linux-386
+``` 
 
-1. From inside the `/src/sqlit` directory, run `go run sqlit` 
+## Building
 
-2. Or, run `go run sqlit --clean` to delete all databases on launch.
+To build the source, first make sure go is installed:
 
-3. 
+```sh
+> sudo apt install golang-go
+> go version
+``` 
 
-### Running from a build
+Then move the project directory to the default go workspace directory:
 
-1. From inside the `/bin` directory, run `./sqlit` 
+```sh
+> mv sqlite $home/go/src
+> cd $home/go/src
+```
 
-## Building the project
+And run! 
 
-- From inside the `/src/sqlit` directory, run `go install sqlit`
+```sh
+> go run sqlit
+# or 
+> go install sqlit
+``` 
 
-- To build executables for all platforms, run `chmod +x ./go-executable-build.sh` and  `./go-executable-build.sh sqlit`
+The clean flag  deletes all databases (stored in the sqlit/tmp directory) before running.
 
-## Organizing multiple databases
+```sh
+> go run sqlit --clean
+```
 
-Databases are represented as directories. Currently they're nested within the tmp/ directory.
-
-## Managing multiple tables
-
-Each table is a file stored
+If these steps don't work, there might be a problem with your $GOPATH. Check the docs: 
+[https://golang.org/doc/code.html](https://golang.org/doc/code.html) 
 
 ## Implementation
 
+The project is designed after sqlite's architecture. The main loop reads in a string which is piped through tokenizer.go, parser.go, and generator.go, into a disk operation. Much more detailed documentation is available in the comments.
+
+## Organizing multiple databases
+
+Databases are represented as directories, just as mentioned in the project spec. Currently they're nested within the tmp/ directory. Inside each is a .meta file with creation details. The program makes checks to prevent duplicate databases or other errors from occuring. The name of the database that is being `USE`'d by the system is stored in memory only.
+
+## Managing multiple tables
+
+Each table is a file nested within its database. The constraint metadata is stored in the first line of the table file, again, just as mentioned in the project spec. One goal is to implement all tables in a single file, to allow for pagination and large tables. 
+
+
 ## Resources
 
-Architecture
+SQLite Architecture
+[https://www.sqlite.org/draft/arch.html](https://www.sqlite.org/draft/arch.html)
 
-https://www.sqlite.org/draft/arch.html
+SQLite SQL Syntax Diagrams
+[https://www.sqlite.org/draft/lang.html](https://www.sqlite.org/draft/lang.html)
 
-For build info and troubleshooting
-
-[How to Write Go Code | https://golang.org/doc/code.html ](https://golang.org/doc/code.html) 
-
-Building for all platforms
-
-[The Script to Automate Cross-Compilation for Golang(OSX) | https://gist.github.com/DimaKoz]()
-
-## Notes
-
-Data Management Functionality
-  1. Persistently store large datasets
-  2. Efficiently query & update
-    - Must handle complex questions about data
-    - Must handle sophisticated updates
-    - Performance matters
-  3. Change structure (e.g., add attributes)
-  4. Concurrency control: enable simultaneous updates
-  5. Crash recovery
-
-Data Management Concepts
-1. Data independence
-  – Physical independence: Can change how data is stored on disk without maintenance to applications
-  – Logical independence: can change schema w/o affecting apps
-2. Query optimizer and compiler
-3. Transactions
-  - isolation and atomicity
-
-
-H1: Metadata management
--- e.g., Create/update/remove tables
-
-H2: Basic data management
-  -- e.g., Insert/update/remove tuples
-
-H3: Data aggregates
-  -- e.g., Different types of table joins
-
-H4: Advanced topics
-  -- e.g., locking, transactions
-
-
-* Case doesn't matter
-* Lock entire DB when writing anything?
-
-
-Inner join
-  SELECT DISTINCT   cname
-  FROM    Product, Company
-  WHERE   country = ‘USA’ AND category = ‘gadget’ 
-          AND manufacturer = cname
-
-Outer join
-  SELECT   Product.name, Purchase.store
-  FROM    Product LEFT OUTER JOIN Purchase ON
-          Product.name = Purchase.prodName
-
-Grouping
-SELECT    product, Sum(quantity) AS TotalSales
-FROM      Purchase
-WHERE     price > 1
-GROUP BY product
-
-Aggregations
-  select count(*) from Purchase
-  select sum(quantity) from Purchase
-  select avg(price) from Purchase
-  select max(quantity) from Purchase
-  select min(quantity) from Purchase
-
-
-
-
-Relational Algebra
-SQL-> Relational Algebra -> Physical Plan
-
-Relational Algebra = Logical Plan
-
-Select Operation (σ)
-- Returns all tuples which satisfy a condition
-- σc(R) 
-  σ stands for selection predicate
-  R stands for relation
-  c is prepositional logic =, <, <=, >, >=, <>
-
-Projection
-- Eliminates columns
-- ∏A1, A2, An (R)
-
+Multi platform build script
+[https://gist.github.com/DimaKoz](https://gist.github.com/DimaKoz/06b7475317b12e7ffa724ef0e115a4ec)

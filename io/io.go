@@ -1,4 +1,7 @@
-// Package io ...
+/* UNR CS 457 | SPRING 2019 | emerson@nevada.unr.edu */
+
+// Package io is a library of ideally-atomic operations
+// used on persisted databases and tables.
 package io
 
 // TODO: rename to utility
@@ -7,17 +10,17 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/user"
+	"time"
 )
 
 const (
 	path = "tmp/"
-	ext  = ".db"
-	ext2 = ".lit"
 )
 
 var database string
 
-// CheckIfDatabaseExists ...
+// CheckIfDatabaseExists checks if a database directory exists
 func CheckIfDatabaseExists(name string) bool {
 	_, err := os.Stat(path + name)
 	if os.IsNotExist(err) {
@@ -26,25 +29,39 @@ func CheckIfDatabaseExists(name string) bool {
 	return true
 }
 
-// CreateDatabase ...
+// CreateDatabase creates a database directory
 func CreateDatabase(name string) error {
 	err := os.Mkdir(path+name, os.ModePerm)
 	return err
 }
 
-// UseDatabase ...
+// CreateDatabaseMeta places a dotfile inside the database with brief details
+func CreateDatabaseMeta(name string) {
+	f, err := os.Create(path + name + "/" + ".meta")
+	check(err)
+	defer f.Close()
+
+	createdAt := time.Now().Format(time.RFC850)
+	owner, err := user.Current()
+	check(err)
+
+	f.WriteString("owner" + " | " + owner.Name + "\n")
+	f.WriteString("createdAt" + " | " + createdAt)
+}
+
+// UseDatabase stores the name of the database in memory
 func UseDatabase(name string) {
 	database = name
 	return
 }
 
-// DeleteDatabase ...
+// DeleteDatabase removes a database directory
 func DeleteDatabase(name string) error {
 	err := os.Remove(path + database + "/" + name)
 	return err
 }
 
-// CheckIfAnyDatabaseIsInUse ...
+// CheckIfAnyDatabaseIsInUse checks if a database name is stored in mem
 func CheckIfAnyDatabaseIsInUse() bool {
 	if database == "" {
 		return false
@@ -54,7 +71,7 @@ func CheckIfAnyDatabaseIsInUse() bool {
 
 // CheckIfTableExists ...
 func CheckIfTableExists(name string) bool {
-	_, err := os.Stat(path + database + "/" + name + ext2)
+	_, err := os.Stat(path + database + "/" + name)
 	if os.IsNotExist(err) {
 		return false
 	}
@@ -63,7 +80,7 @@ func CheckIfTableExists(name string) bool {
 
 // CreateTable ...
 func CreateTable(name string, columns []string, constraints []string) {
-	f, err := os.Create(path + database + "/" + name + ext2)
+	f, err := os.Create(path + database + "/" + name)
 	check(err)
 
 	defer f.Close()
@@ -78,16 +95,16 @@ func CreateTable(name string, columns []string, constraints []string) {
 
 // DropTable ...
 func DropTable(name string) {
-	err := os.Remove(path + database + "/" + name + ext2)
+	err := os.Remove(path + database + "/" + name)
 	check(err)
 }
 
-// AlterTable ... TODO: fic ASAP
+// AlterTable ... TODO: fix
 func AlterTable(name string, method string, column string, constraint string) string {
-	fileContents, err := ioutil.ReadFile(path + database + "/" + name + ext2)
+	fileContents, err := ioutil.ReadFile(path + database + "/" + name)
 	check(err)
 
-	f, err := os.Create(path + database + "/" + name + ext2)
+	f, err := os.Create(path + database + "/" + name)
 	check(err)
 	defer f.Close()
 
@@ -100,7 +117,7 @@ func AlterTable(name string, method string, column string, constraint string) st
 
 // SelectAll ...
 func SelectAll(name string) string {
-	fileContents, err := ioutil.ReadFile(path + database + "/" + name + ext2)
+	fileContents, err := ioutil.ReadFile(path + database + "/" + name)
 	check(err)
 	return string(fileContents)
 }
@@ -118,6 +135,10 @@ func lockTable() {}
 func unlockTable() {}
 
 func dropTable() {}
+
+//
+//			Helper functions
+//
 
 func check(e error) {
 	if e != nil {

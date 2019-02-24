@@ -1,4 +1,8 @@
-// Package generator ...
+/* UNR CS 457 | SPRING 2019 | emerson@nevada.unr.edu */
+
+// Package generator determines a block of assertions and a block of operations
+// needed to perform a statement. This is our high level analog of SQLite's
+// "bytecode generator".
 package generator
 
 import (
@@ -9,7 +13,7 @@ import (
 	"strings"
 )
 
-// Operation ...
+// Operations ...
 type Operation struct {
 	Assert func() (err error)
 	Invoke func() (success string, err error)
@@ -53,6 +57,7 @@ func generateCreateDatabase(statement tokenizer.Statement) Operation {
 
 	invoke := func() (string, error) {
 		err := io.CreateDatabase(name)
+		io.CreateDatabaseMeta(name)
 		return "Database " + name + " created.", err
 	}
 
@@ -220,9 +225,10 @@ func generateInsert(statement tokenizer.Statement) Operation {
 	return Operation{Assert: assert, Invoke: invoke}
 }
 
-/*
- *	Helper Functions
- */
+//
+//			Helper functions
+//
+
 func getAllTokensOfName(statement tokenizer.Statement, name string) []string {
 	var specials []string
 	for _, token := range statement.Tokens {
