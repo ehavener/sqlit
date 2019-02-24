@@ -3,12 +3,12 @@
 #then we can use it  ./go-executable-build.sh yourpackage
 #!/usr/bin/env bash
 
-package=$1
-if [[ -z "$package" ]]; then
-  echo "usage: $0 <package-name>"
-  exit 1
-fi
-package_name=$package
+# package=$1
+# if [[ -z "$package" ]]; then
+#   echo "usage: $0 <package-name>"
+#   exit 1
+# fi
+package_name="sqlit"
 
 #the full list of the platforms: https://golang.org/doc/install/source#environment
 platforms=(
@@ -47,7 +47,7 @@ do
         output_name+='.exe'
     fi
 
-    env GOOS=$GOOS GOARCH=$GOARCH go build -i -o bin/$output_name $package
+    env GOOS=$GOOS GOARCH=$GOARCH go build -i -o $output_name $package
     if [ $? -ne 0 ]; then
         echo 'An error has occurred! Aborting the script execution...'
         exit 1

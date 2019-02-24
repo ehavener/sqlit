@@ -1,4 +1,4 @@
-// Package generator ... 
+// Package generator ...
 package generator
 
 import (
@@ -34,8 +34,8 @@ func Generate(statement tokenizer.Statement) Operation {
 		operation = generateDropTable(statement)
 	case parser.Types["SELECT"]:
 		operation = generateSelect(statement)
-		//case parser.Types["INSERT"]:
-		//	operation = generateInsert(statement)
+	case parser.Types["INSERT"]:
+		operation = generateInsert(statement)
 	}
 
 	return operation
@@ -193,6 +193,36 @@ func generateSelect(statement tokenizer.Statement) Operation {
 	return Operation{Assert: assert, Invoke: invoke}
 }
 
+func generateInsert(statement tokenizer.Statement) Operation {
+	name := getFirstTokenOfName(statement, "TABLE_NAME")
+
+	assert := func() error {
+		if io.CheckIfAnyDatabaseIsInUse() == false {
+			return errors.New("!Failed to query table " + name + " because no database is in use.")
+		}
+
+		if io.CheckIfTableExists(name) == false {
+			return errors.New("!Failed to query table " + name + " because it does not exist.")
+		}
+
+		// if io.CheckIfTypesMatch() == false {
+		// 	return errors.New("!Failed to query table " + name + " because of type mismatch.")
+		// }
+
+		return nil
+	}
+
+	invoke := func() (string, error) {
+		result := io.SelectAll(name)
+		return result, nil
+	}
+
+	return Operation{Assert: assert, Invoke: invoke}
+}
+
+/*
+ *	Helper Functions
+ */
 func getAllTokensOfName(statement tokenizer.Statement, name string) []string {
 	var specials []string
 	for _, token := range statement.Tokens {
