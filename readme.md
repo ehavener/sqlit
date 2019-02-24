@@ -18,19 +18,26 @@ To build the source, first make sure go is installed:
 > go version
 ``` 
 
+Export your gopath
+
+```sh
+> export GOPATH=$HOME/go
+``` 
+
 Then move the project directory to the default go workspace directory:
 
 ```sh
-> mv sqlite $home/go/src
-> cd $home/go/src
+> mkdir ~/go && mkdir ~/go/src
+> mv sqlit $HOME/go/src
+> cd $HOME/go/src
 ```
 
-And run! 
+And build & run! 
 
 ```sh
-> go run sqlit
-# or 
-> go install sqlit
+> go install sqlit 
+> cd ~/go/bin # default build output dir
+> ./sqlit
 ``` 
 
 The clean flag  deletes all databases (stored in the sqlit/tmp directory) before running.
