@@ -84,7 +84,7 @@ func launchConsole() {
 		} else {
 			line = filterDelimiter(line)
 
-			statement := line + strings.Join(partialStatementBuffer, " ")
+			statement := strings.Join(partialStatementBuffer, " ") + line
 
 			if len(statement) > 1 {
 				processLine(statement)
@@ -103,6 +103,10 @@ func processLine(line string) {
 	// Give them some syntactical meaning
 	statement = parser.ParseStatement(statement)
 
+	if *DebugPtr {
+		tokenizer.PrintStatement(statement)
+	}
+
 	// Generate a function of assertions and a function of operations for our query
 	operation := generator.Generate(statement)
 
@@ -119,10 +123,6 @@ func processLine(line string) {
 		fmt.Println(err)
 	} else {
 		fmt.Println(success)
-	}
-
-	if *DebugPtr {
-		tokenizer.PrintStatement(statement)
 	}
 }
 

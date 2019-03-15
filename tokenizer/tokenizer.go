@@ -15,7 +15,7 @@ type Token struct {
 }
 
 // Names are general classes for tokens
-var Names = [11]string{
+var Names = [12]string{
 	"CREATE",
 	"DROP",
 	"USE",
@@ -25,6 +25,7 @@ var Names = [11]string{
 	"ALTER",
 	"DELETE",
 	"SELECT",
+	"UPDATE",
 	"LITERAL",
 	"special",
 }
@@ -37,6 +38,7 @@ type Statement struct {
 
 // TokenizeStatement breaks a string of SQL into a statement
 func TokenizeStatement(rawStatement string) Statement {
+	fmt.Println(rawStatement)
 	rawWords := strings.Fields(rawStatement)
 
 	tokens := make([]Token, 0, len(rawWords))

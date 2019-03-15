@@ -7,13 +7,14 @@ package generator
 
 import (
 	"errors"
-	"sqlit/io"
+	// "fmt"
+	"sqlit/diskio"
 	"sqlit/parser"
 	"sqlit/tokenizer"
 	"strings"
 )
 
-// Operations ...
+// Operation ...
 type Operation struct {
 	Assert func() (err error)
 	Invoke func() (success string, err error)
@@ -40,6 +41,8 @@ func Generate(statement tokenizer.Statement) Operation {
 		operation = generateSelect(statement)
 	case parser.Types["INSERT"]:
 		operation = generateInsert(statement)
+	case parser.Types["UPDATE"]:
+		operation = generateUpdate(statement)
 	}
 
 	return operation
@@ -49,15 +52,15 @@ func generateCreateDatabase(statement tokenizer.Statement) Operation {
 	name := getFirstTokenOfName(statement, "DATABASE_NAME")
 
 	assert := func() error {
-		if io.CheckIfDatabaseExists(name) == true {
+		if diskio.CheckIfDatabaseExists(name) == true {
 			return errors.New("!Failed to create database " + name + " because it already exists.")
 		}
 		return nil
 	}
 
 	invoke := func() (string, error) {
-		err := io.CreateDatabase(name)
-		io.CreateDatabaseMeta(name)
+		err := diskio.CreateDatabase(name)
+		diskio.CreateDatabaseMeta(name)
 		return "Database " + name + " created.", err
 	}
 
@@ -68,14 +71,14 @@ func generateDropDatabase(statement tokenizer.Statement) Operation {
 	name := getFirstTokenOfName(statement, "DATABASE_NAME")
 
 	assert := func() error {
-		if io.CheckIfDatabaseExists(name) == false {
+		if diskio.CheckIfDatabaseExists(name) == false {
 			return errors.New("!Failed to delete " + name + " because it does not exist.")
 		}
 		return nil
 	}
 
 	invoke := func() (string, error) {
-		err := io.DeleteDatabase(name)
+		err := diskio.DeleteDatabase(name)
 		return "Database " + name + " deleted.", err
 	}
 
@@ -86,14 +89,14 @@ func generateUseDatabase(statement tokenizer.Statement) Operation {
 	name := getFirstTokenOfName(statement, "DATABASE_NAME")
 
 	assert := func() error {
-		if io.CheckIfDatabaseExists(name) == false {
+		if diskio.CheckIfDatabaseExists(name) == false {
 			return errors.New("!Failed to use database " + name + " because it does not exist.")
 		}
 		return nil
 	}
 
 	invoke := func() (string, error) {
-		io.UseDatabase(name)
+		diskio.UseDatabase(name)
 		return "Using database " + name, nil
 	}
 
@@ -105,23 +108,25 @@ func generateCreateTable(statement tokenizer.Statement) Operation {
 	columns := getAllTokensOfName(statement, "COL_NAME")
 	constraints := getAllTokensOfName(statement, "COL_TYPE")
 
-	// TODO: move these two calls to tokenizer?
-	columns = sanitizeColumns(columns)
-	constraints = sanitizeConstraints(constraints)
+	// TODO: move these to tokenizer?
+	columns, constraints = removeOuterParenthesis(columns, constraints)
+
+	columns = removeCommas(columns)
+	constraints = removeCommas(constraints)
 
 	assert := func() error {
-		if io.CheckIfAnyDatabaseIsInUse() == false {
+		if diskio.CheckIfAnyDatabaseIsInUse() == false {
 			return errors.New("!Failed to create table " + name + " because no database is in use.")
 		}
 
-		if io.CheckIfTableExists(name) == true {
+		if diskio.CheckIfTableExists(name) == true {
 			return errors.New("!Failed to create table " + name + " because it already exists.")
 		}
 		return nil
 	}
 
 	invoke := func() (string, error) {
-		io.CreateTable(name, columns, constraints)
+		diskio.CreateTable(name, columns, constraints)
 		return "Table " + name + " created.", nil
 	}
 
@@ -132,18 +137,18 @@ func generateDropTable(statement tokenizer.Statement) Operation {
 	name := getFirstTokenOfName(statement, "TABLE_NAME")
 
 	assert := func() error {
-		if io.CheckIfAnyDatabaseIsInUse() == false {
+		if diskio.CheckIfAnyDatabaseIsInUse() == false {
 			return errors.New("!Failed to delete table " + name + " because no database is in use.")
 		}
 
-		if io.CheckIfTableExists(name) == false {
+		if diskio.CheckIfTableExists(name) == false {
 			return errors.New("!Failed to delete table " + name + " because it does not exist.")
 		}
 		return nil
 	}
 
 	invoke := func() (string, error) {
-		io.DropTable(name)
+		diskio.DropTable(name)
 		return "Table " + name + " deleted.", nil
 	}
 
@@ -157,11 +162,11 @@ func generateAlterTable(statement tokenizer.Statement) Operation {
 	constraint := getFirstTokenOfName(statement, "COL_TYPE")
 
 	assert := func() error {
-		if io.CheckIfAnyDatabaseIsInUse() == false {
+		if diskio.CheckIfAnyDatabaseIsInUse() == false {
 			return errors.New("!Failed to alter table " + name + " because no database is in use.")
 		}
 
-		if io.CheckIfTableExists(name) == false {
+		if diskio.CheckIfTableExists(name) == false {
 			return errors.New("!Failed to alter table " + name + " because it does not exist.")
 		}
 
@@ -169,7 +174,7 @@ func generateAlterTable(statement tokenizer.Statement) Operation {
 	}
 
 	invoke := func() (string, error) {
-		io.AlterTable(name, method, column, constraint)
+		diskio.AlterTable(name, method, column, constraint)
 		return "Table " + name + " modified.", nil
 	}
 
@@ -177,21 +182,22 @@ func generateAlterTable(statement tokenizer.Statement) Operation {
 }
 
 func generateSelect(statement tokenizer.Statement) Operation {
+
 	name := getFirstTokenOfName(statement, "TABLE_NAME")
 
 	assert := func() error {
-		if io.CheckIfAnyDatabaseIsInUse() == false {
+		if diskio.CheckIfAnyDatabaseIsInUse() == false {
 			return errors.New("!Failed to query table " + name + " because no database is in use.")
 		}
 
-		if io.CheckIfTableExists(name) == false {
+		if diskio.CheckIfTableExists(name) == false {
 			return errors.New("!Failed to query table " + name + " because it does not exist.")
 		}
 		return nil
 	}
 
 	invoke := func() (string, error) {
-		result := io.SelectAll(name)
+		result := diskio.SelectAll(name)
 		return result, nil
 	}
 
@@ -200,17 +206,21 @@ func generateSelect(statement tokenizer.Statement) Operation {
 
 func generateInsert(statement tokenizer.Statement) Operation {
 	name := getFirstTokenOfName(statement, "TABLE_NAME")
+	values := getAllTokensOfName(statement, "VALUE")
+	values = removeCommas(values)
+	values = removeOuterParenthesisFromValues(values)
 
 	assert := func() error {
-		if io.CheckIfAnyDatabaseIsInUse() == false {
+		if diskio.CheckIfAnyDatabaseIsInUse() == false {
 			return errors.New("!Failed to query table " + name + " because no database is in use.")
 		}
 
-		if io.CheckIfTableExists(name) == false {
+		if diskio.CheckIfTableExists(name) == false {
 			return errors.New("!Failed to query table " + name + " because it does not exist.")
 		}
 
-		// if io.CheckIfTypesMatch() == false {
+		// TODO: assert insertions respect constraints, right amount
+		// if diskio.CheckIfTypesMatch() == false {
 		// 	return errors.New("!Failed to query table " + name + " because of type mismatch.")
 		// }
 
@@ -218,7 +228,41 @@ func generateInsert(statement tokenizer.Statement) Operation {
 	}
 
 	invoke := func() (string, error) {
-		result := io.SelectAll(name)
+		diskio.InsertRecord(name, values)
+		result := "1 new record inserted."
+		// result := diskio.SelectAll(name)
+		return result, nil
+	}
+
+	return Operation{Assert: assert, Invoke: invoke}
+}
+
+func generateUpdate(statement tokenizer.Statement) Operation {
+	// fmt.Println("HIT")
+
+	table := getFirstTokenOfName(statement, "TABLE_NAME")
+	whereCol := getSecondTokenOfName(statement, "COL_NAME")
+	whereValue := getSecondTokenOfName(statement, "COL_VALUE")
+	toCol := getFirstTokenOfName(statement, "COL_NAME")
+	toValue := getFirstTokenOfName(statement, "COL_VALUE")
+
+	assert := func() error {
+		if diskio.CheckIfAnyDatabaseIsInUse() == false {
+			return errors.New("!Failed to query table " + table + " because no database is in use.")
+		}
+
+		if diskio.CheckIfTableExists(table) == false {
+			return errors.New("!Failed to query table " + table + " because it does not exist.")
+		}
+
+		// TODO: better assertions
+		return nil
+	}
+
+	invoke := func() (string, error) {
+		result := diskio.UpdateRecord(table, whereCol, whereValue, toCol, toValue)
+		result = result + " record modified." +  diskio.SelectAll(table)
+  	//	result = strings.
 		return result, nil
 	}
 
@@ -241,24 +285,55 @@ func getAllTokensOfName(statement tokenizer.Statement, name string) []string {
 
 func getFirstTokenOfName(statement tokenizer.Statement, name string) string {
 	for _, token := range statement.Tokens {
+		// fmt.Println("Token.Name: " + token.Name)
 		if token.Name == name {
 			return token.Special
 		}
 	}
-	return "err"
+	// TODO: handle err
+	panic("Token " + name + " doesn't exist")
+	// fmt.Println("Token " + name + " doesn't exist")
+	// return ""
 }
 
-func sanitizeColumns(columns []string) []string {
-	for i := 0; i < len(columns); i++ {
-		columns[i] = strings.Replace(columns[i], "(", "", 1)
+func getSecondTokenOfName(statement tokenizer.Statement, name string) string {
+	// fmt.Println("hit")
+	foundFirst := false
+	for _, token := range statement.Tokens {
+		if token.Name == name {
+			if foundFirst == true {
+				return token.Special
+			}
+
+			foundFirst = true
+		}
 	}
-	return columns
+	// TODO: handle err
+	panic("Token " + name + " doesn't exist")
+	// fmt.Println("Token " + name + " doesn't exist")
+	// return ""
 }
 
-func sanitizeConstraints(constraints []string) []string {
-	for i := 0; i < len(constraints); i++ {
-		constraints[i] = strings.Replace(constraints[i], ")", "", 1)
-		constraints[i] = strings.Replace(constraints[i], ",", "", -1)
+//	@in	    (pid int, | name varchar(20), | price float)
+//  @out		pid int, | name varchar(20), | price float
+func removeOuterParenthesis(columns []string, constraints []string) ([]string, []string) {
+	columns[0] = strings.Replace(columns[0], "(", "", 1)
+	constraints[len(constraints)-1] = strings.Replace(constraints[len(constraints)-1], ")", "", 1)
+
+	return columns, constraints
+}
+
+// TOFIX: already   gone
+func removeOuterParenthesisFromValues(values []string) []string {
+	values[0] = strings.Replace(values[0], "(", "", 1)
+	values[len(values)-1] = strings.Replace(values[len(values)-1], ")", "", 1)
+
+	return values
+}
+
+func removeCommas(values []string) []string {
+	for i := 0; i < len(values); i++ {
+		values[i] = strings.Replace(values[i], ",", "", 1)
 	}
-	return constraints
+	return values
 }

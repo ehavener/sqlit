@@ -1,11 +1,13 @@
 /* UNR CS 457 | SPRING 2019 | emerson@nevada.unr.edu */
 
-// Package parser takes a Statement (tokenized SQL) and labels it 
+// Package parser takes a Statement (tokenized SQL) and labels it
 // with a Type. It also lables individual tokens.
 package parser
 
 import (
+	// "fmt"
 	"sqlit/tokenizer"
+	"strings"
 )
 
 var names = map[string]string{
@@ -18,6 +20,7 @@ var names = map[string]string{
 	"ALTER":    "ALTER",
 	"SELECT":   "SELECT",
 	"DELETE":   "DELETE",
+	"UPDATE":   "UPDATE",
 	"LITERAL":  "LITERAL",
 	"special":  "special",
 }
@@ -30,6 +33,11 @@ var specialNames = map[string]string{
 	"ADD_COL":       "ADD_COL",
 	"ALL":           "ALL",
 	"FROM":          "FROM",
+	"VALUE":         "VALUE",
+	"SET":           "SET",
+	"EQUALS":        "EQUALS",
+	"COL_VALUE":     "COL_VALUE",
+	"WHERE":         "WHERE",
 }
 
 // Types are general classes for statements
@@ -42,6 +50,7 @@ var Types = map[string]string{
 	"ALTER_TABLE":     "ALTER_TABLE",
 	"INSERT":          "INSERT",
 	"SELECT":          "SELECT",
+	"UPDATE":          "UPDATE",
 	"DELETE":          "DELETE",
 }
 
@@ -102,6 +111,11 @@ func inferStatementType(statement tokenizer.Statement) tokenizer.Statement {
 		return statement
 	}
 
+	if statement.Tokens[0].Name == names["UPDATE"] {
+		statement.Type = Types["UPDATE"]
+		return statement
+	}
+
 	if statement.Tokens[0].Name == names["DELETE"] {
 		statement.Type = Types["DELETE"]
 		return statement
@@ -129,6 +143,8 @@ func inferTokenspecialNames(statement tokenizer.Statement) tokenizer.Statement {
 		statement = parseInsert(statement)
 	case Types["SELECT"]:
 		statement = parseSelect(statement)
+	case Types["UPDATE"]:
+		statement = parseUpdate(statement)
 	}
 
 	return statement
@@ -172,7 +188,7 @@ func parseCreateTable(statement tokenizer.Statement) tokenizer.Statement {
 
 func parseAlterTable(statement tokenizer.Statement) tokenizer.Statement {
 	setSpecialNameIfTokenExists(statement, 2, specialNames["TABLE_NAME"])
-	if statement.Tokens[3].Special == "ADD" {
+	if strings.EqualFold(statement.Tokens[3].Special, "ADD") {
 		setSpecialNameIfTokenExists(statement, 3, specialNames["ADD_COL"])
 		setSpecialNameIfTokenExists(statement, 4, specialNames["COL_TYPE"])
 		setSpecialNameIfTokenExists(statement, 5, specialNames["COL_NAME"])
@@ -182,11 +198,11 @@ func parseAlterTable(statement tokenizer.Statement) tokenizer.Statement {
 
 // https://www.sqlite.org/draft/syntaxdiagrams.html#select-stmt
 func parseSelect(statement tokenizer.Statement) tokenizer.Statement {
-	if statement.Tokens[1].Special == "*" {
+	if strings.EqualFold(statement.Tokens[1].Special, "*") {
 		setSpecialNameIfTokenExists(statement, 1, specialNames["ALL"])
 	}
 
-	if statement.Tokens[2].Special == "FROM" {
+	if strings.EqualFold(statement.Tokens[2].Special, "FROM") {
 		setSpecialNameIfTokenExists(statement, 2, specialNames["FROM"])
 		setSpecialNameIfTokenExists(statement, 3, specialNames["TABLE_NAME"])
 	}
@@ -194,6 +210,36 @@ func parseSelect(statement tokenizer.Statement) tokenizer.Statement {
 }
 
 func parseInsert(statement tokenizer.Statement) tokenizer.Statement {
+	if strings.EqualFold(statement.Tokens[1].Special, "into") {
+		setSpecialNameIfTokenExists(statement, 1, specialNames["INTO"])
+	}
+
+	setSpecialNameIfTokenExists(statement, 2, specialNames["TABLE_NAME"])
+
+	for i := 3; i < len(statement.Tokens); i++ {
+		setSpecialNameIfTokenExists(statement, i, specialNames["VALUE"])
+	}
+
+	// @in		values(1,	'Gizmo',  19.99);
+	// @out 	(1,	'Gizmo',  19.99);
+	statement.Tokens[3].Special = strings.Replace(statement.Tokens[3].Special, "values", "", 1)
+
+	return statement
+}
+
+func parseUpdate(statement tokenizer.Statement) tokenizer.Statement {
+	// fmt.Println("hmm "+statement.Tokens[0].Name, statement.Tokens[0].Special)
+
+	setSpecialNameIfTokenExists(statement, 1, specialNames["TABLE_NAME"])
+	setSpecialNameIfTokenExists(statement, 2, specialNames["SET"])
+	setSpecialNameIfTokenExists(statement, 3, specialNames["COL_NAME"])
+	setSpecialNameIfTokenExists(statement, 4, specialNames["EQUALS"])
+	setSpecialNameIfTokenExists(statement, 5, specialNames["COL_VALUE"])
+	setSpecialNameIfTokenExists(statement, 6, specialNames["WHERE"])
+	setSpecialNameIfTokenExists(statement, 7, specialNames["COL_NAME"])
+	setSpecialNameIfTokenExists(statement, 8, specialNames["EQUALS"])
+	setSpecialNameIfTokenExists(statement, 9, specialNames["COL_VALUE"])
+
 	return statement
 }
 
