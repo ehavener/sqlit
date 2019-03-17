@@ -9,7 +9,6 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sqlit/generator"
@@ -17,8 +16,6 @@ import (
 	"sqlit/tokenizer"
 	"strings"
 )
-
-var scriptPtr *string
 
 var cleanPtr *bool
 
@@ -37,8 +34,6 @@ func main() {
 
 	createTmpDirectory()
 
-	scriptPtr = flag.String("script", "", "run a SQL script from file in dir sqlit/")
-
 	cleanPtr = flag.Bool("clean", false, "deletes all previously created databases in sqlit/tmp")
 
 	DebugPtr = flag.Bool("debug", false, "displays debugging info")
@@ -49,16 +44,7 @@ func main() {
 		removeContents("tmp")
 	}
 
-	if *scriptPtr != "" {
-		SQLFilename := *scriptPtr
-		SQLFileContents, err := ioutil.ReadFile(SQLFilename)
-		check(err)
-
-		runSQLScript(SQLFileContents)
-	} else {
-		launchConsole()
-	}
-
+	launchConsole()
 }
 
 // launchConsole loops for standard input, does some basic
@@ -203,63 +189,4 @@ func removeContents(dir string) error {
 		}
 	}
 	return nil
-}
-
-// runSQLScript loads a SQL script
-// TODO: this needs to be refactored and might not work
-// plus I think out could just cat <  into the prompt somehow
-func runSQLScript(fileContents []byte) {
-
-	// Make string array from fileData by line
-	linesCommentsRemoved := make([]string, 0, 1000)
-	lines := strings.Split(string(fileContents), "\n")
-	for _, line := range lines {
-
-		// Strip comment lines
-		if strings.HasPrefix(line, "--") == false {
-
-			// Strip empty lines
-			if len(line) > 1 {
-				linesCommentsRemoved = append(linesCommentsRemoved, line)
-			}
-		}
-	}
-
-	// remove carridge returns from lines
-	linesCarridgeReturnsRemoved := make([]string, 0, 1000)
-	for _, line := range linesCommentsRemoved {
-		// Strip empty lines
-		if line[len(line)-1] == 13 {
-			line = strings.Replace(line, "\r", "", -1)
-			linesCarridgeReturnsRemoved = append(linesCarridgeReturnsRemoved, line)
-		}
-	}
-
-	// join lines that aren't delimited
-	linesBreaksRemoved := make([]string, 0, 1000)
-	i := 0
-	for _, line := range linesCarridgeReturnsRemoved {
-
-		fmt.Println(line)
-
-		if strings.HasSuffix(line, ";") == true {
-			line = strings.Replace(line, ";", "", -1)
-			linesBreaksRemoved = append(linesBreaksRemoved, line)
-		} else if strings.HasSuffix(line, ";") == false {
-			if strings.EqualFold(line, ".exit") == false {
-				a := []string{line, linesCarridgeReturnsRemoved[i+1]}
-				linesCarridgeReturnsRemoved[i+1] = strings.Join(a, "")
-			}
-		}
-		i++
-	}
-
-	fmt.Println("")
-	for _, line := range linesBreaksRemoved {
-		processLine(line)
-	}
-
-	fmt.Println("All done.")
-
-	launchConsole()
 }

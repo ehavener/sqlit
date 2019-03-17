@@ -5,8 +5,6 @@
 package parser
 
 import (
-	// "fmt"
-
 	"sqlit/tokenizer"
 	"strings"
 )
@@ -290,8 +288,6 @@ func parseDelete(statement tokenizer.Statement) tokenizer.Statement {
 //
 
 func setSpecialNameIfTokenExists(statement tokenizer.Statement, i int, name string) {
-	// fmt.Println("hmm "+statement.Tokens[i].Name, statement.Tokens[i].Special)
-
 	if len(statement.Tokens) >= i {
 		statement.Tokens[i].Name = name
 	}

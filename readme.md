@@ -1,7 +1,9 @@
-<!-- markdownlint-disablee -->
+<!-- markdownlint-disable -->
+
 # CS 457 Programming Assignment 1: Metadata Management
 
 ## Running
+
 The quickest way to test the program is to just run a precompiled build
 
 ```sh
@@ -59,14 +61,37 @@ If these steps don't work, there might be a problem with your $GOPATH. Check the
 
 The project is designed after sqlite's architecture. The main loop reads in a string which is piped through tokenizer.go, parser.go, and generator.go, into a disk operation. Much more detailed documentation is available in the comments.
 
-## Organizing multiple databases
+## Organizing multiple databases (PA1)
 
 Databases are represented as directories, just as mentioned in the project spec. Currently they're nested within the tmp/ directory. Inside each is a .meta file with creation details. The program makes checks to prevent duplicate databases or other errors from occuring. The name of the database that is being `USE`'d by the system is stored in memory only.
 
-## Managing multiple tables
+## Managing multiple tables (PA1)
 
 Each table is a file nested within its database. The constraint metadata is stored in the first line of the table file, again, just as mentioned in the project spec. One goal is to implement all tables in a single file, to allow for pagination and large tables.
 
+## Tuple insertion, deletion, modification, and query (PA2)
+
+The primary functons that handle tuple CRUD are InsertRecord(), SelectWhere(), UpdateRecord(), and DeleteRecord(). They all behave similarly, and live in the diskio library. They are fairly abstract, but some compromises were made to reduce complexity. The only operators that are implemented are "*", ">", "=", and "=", and only the update/select clause formats used in the test files have been tested.
+
+DeleteRecord() will
+- open the table file in Read mode
+- read the table's metadata (column names)
+- determine the offset of the clause's column
+- iterate through all records in the table, reading their values at the clause column
+- compare their values to the clause
+- records are physically deleted by opening a new file reader instance in write mode and erasing the selected record by it's bytestring
+
+UpdateRecord() will behave like DeleteRecord(), only replacing the record with a newly constructed bytestring.
+
+InsertRecord() will
+- open the table file in append mode
+- construct a record from the given tuple, in a similar format to table metadata (pipe delimited)
+- append the new record to the last line of the table file
+
+SelectWhere() will
+- construct a temporary table of the columns specified
+- read through a table, accumulating the values at the specified columns which pass the clause
+- output the temporary table
 
 ## Resources
 

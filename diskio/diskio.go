@@ -4,8 +4,6 @@
 // used on persisted databases and tables.
 package diskio
 
-// TODO: rename to utility
-
 import (
 	"bufio"
 	"bytes"
@@ -73,7 +71,7 @@ func CheckIfAnyDatabaseIsInUse() bool {
 	return true
 }
 
-// CheckIfTableExists ...
+// CheckIfTableExists does as named
 func CheckIfTableExists(name string) bool {
 	_, err := os.Stat(path + database + "/" + name)
 	if os.IsNotExist(err) {
@@ -82,7 +80,7 @@ func CheckIfTableExists(name string) bool {
 	return true
 }
 
-// CreateTable ...
+// CreateTable creates a table file and initializes its metadata
 func CreateTable(name string, columns []string, constraints []string) {
 	f, err := os.Create(path + database + "/" + name)
 	check(err)
@@ -97,13 +95,13 @@ func CreateTable(name string, columns []string, constraints []string) {
 	}
 }
 
-// DropTable ...
+// DropTable deletes a table's file
 func DropTable(name string) {
 	err := os.Remove(path + database + "/" + name)
 	check(err)
 }
 
-// AlterTable ... TODO: fix
+// AlterTable modifies a table's metadata
 func AlterTable(name string, method string, column string, constraint string) string {
 	fileContents, err := ioutil.ReadFile(path + database + "/" + name)
 	check(err)
@@ -119,50 +117,48 @@ func AlterTable(name string, method string, column string, constraint string) st
 	return SelectAll(name)
 }
 
-// SelectAll ...
+// SelectAll selects all records in a table
 func SelectAll(name string) string {
 	fileContents, err := ioutil.ReadFile(path + database + "/" + name)
 	check(err)
 	return string(fileContents)
 }
 
-// SelectWhere ...
+// SelectWhere selects a subset of records in a table, provided a clause
 func SelectWhere(table string, colNames []string, whereColName string, whereColVal string) string {
 
-	recordAmount := getAmountOfRecordsInTable(table)
-
+	// open the table file contents
 	f, err := os.Open(path + database + "/" + table)
 	check(err)
 	defer f.Close()
 
+	// read in the metadata line, parse the table's col names
 	reader := bufio.NewReader(f)
 	tableMetaLine, _ := reader.ReadString('\n')
 	colDefs := strings.Split(tableMetaLine, "|")
 
+	// find pernient offsets of clause
 	var firstColOffset int
 	var secondColOffset int
 	var whereColOffset int
 
-	// find col offset of toCol
 	for i := range colDefs {
-
 		if strings.EqualFold(strings.Fields(colDefs[i])[0], whereColName) {
 			whereColOffset = i
 		}
-
 		if strings.EqualFold(strings.Fields(colDefs[i])[0], colNames[0]) {
 			firstColOffset = i
 		}
-
 		if strings.EqualFold(strings.Fields(colDefs[i])[0], colNames[1]) {
 			secondColOffset = i
 		}
-
 	}
 
+	// initialize our selection subset
 	var selection string
 
-	for i := 0; i < recordAmount; i++ {
+	// populate selection by iterating through records
+	for i := 0; i < getAmountOfRecordsInTable(table); i++ {
 		record, _ := reader.ReadString('\n')
 		values := strings.Split(record, "|")
 
@@ -171,15 +167,19 @@ func SelectWhere(table string, colNames []string, whereColName string, whereColV
 		}
 	}
 
-	// make new table meta
+	// make new table meta based on queried cols
 	newMeta := strings.TrimSpace(colDefs[firstColOffset]) + "|" + colDefs[secondColOffset]
+
+	// append selection meta to selection's resultant records
 	result := newMeta + selection
 
 	return string(result)
 }
 
-// InsertRecord ...
+// InsertRecord inserts a single record to a table
 func InsertRecord(name string, values []string) error {
+
+	// Open the table in append mode
 	f, err := os.OpenFile(path+database+"/"+name, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	check(err)
 	defer f.Close()
@@ -188,6 +188,7 @@ func InsertRecord(name string, values []string) error {
 
 	writeBuffer += "\n"
 
+	// construct new record from values
 	for i := 0; i < len(values); i++ {
 		if i > 0 {
 			writeBuffer += "|"
@@ -195,14 +196,12 @@ func InsertRecord(name string, values []string) error {
 		writeBuffer += values[i]
 	}
 
+	// write the new record to the end of the table
 	f2, err2 := f.Write([]byte(writeBuffer))
 	if f2 == 0 {
 		return err
 	}
 	check(err2)
-
-	// n, err := f.WriteString(f, "\n")
-	// check(err)
 
 	return err
 }
@@ -215,32 +214,8 @@ func InsertRecord(name string, values []string) error {
 func UpdateRecord(table string, whereCol string, whereValue string, toCol string, toValue string) int {
 
 	recordAmount := getAmountOfRecordsInTable(table)
-
-	f, err := os.Open(path + database + "/" + table)
-	check(err)
-	defer f.Close()
-
-	reader := bufio.NewReader(f)
-	tableMetaLine, _ := reader.ReadString('\n')
-	colDefs := strings.Split(tableMetaLine, "|")
-
-	// break the constraint off the colName
-	colNames := make([]string, 0, len(colDefs))
-	for i := range colDefs {
-		colNames = append(colNames, strings.Fields(colDefs[i])[0])
-	}
-
-	// var whereColOffset int
-	var toColOffset int
-	// var selectedRowOffset int
-
-	// find col offset of toCol
-	for i := range colNames {
-		if colNames[i] == toCol {
-			toColOffset = i
-		}
-	}
-
+	colNames := getTableColNames(table)
+	toColOffset := getIndexOfColName(colNames, toCol)
 	recordsModified := 0
 
 	// for each record
@@ -266,8 +241,6 @@ func UpdateRecord(table string, whereCol string, whereValue string, toCol string
 
 			// if colVal matches whereValue
 			if strings.EqualFold(strings.TrimSpace(values[j]), strings.TrimSpace(whereValue)) {
-				// selectedRowOffset = i
-				// find toColOffset within table[selectedRowOffset] and assign it toValue
 
 				// replace colVal with toValue
 				newValues := values
@@ -280,21 +253,7 @@ func UpdateRecord(table string, whereCol string, whereValue string, toCol string
 					newRecord += "\n"
 				}
 
-				// open up another instance of table file
-				input, err := ioutil.ReadFile(path + database + "/" + table)
-				if err != nil {
-					fmt.Println(err)
-					os.Exit(1)
-				}
-
-				// replace the record with our new record
-				output := bytes.Replace(input, []byte(record), []byte(newRecord), -1)
-
-				// save write to the new file
-				if err = ioutil.WriteFile(path+database+"/"+table, output, 0666); err != nil {
-					fmt.Println(err)
-					os.Exit(1)
-				}
+				replaceRecord(table, record, newRecord)
 
 				// save the last updated index
 				recordsModified++
@@ -305,7 +264,7 @@ func UpdateRecord(table string, whereCol string, whereValue string, toCol string
 	return recordsModified
 }
 
-// DeleteRecord deletes a record
+// DeleteRecord deletes a record that matches a clause
 func DeleteRecord(table string, whereCol string, whereValue string, comparator string) int {
 
 	recordAmount := getAmountOfRecordsInTable(table)
@@ -355,18 +314,19 @@ func DeleteRecord(table string, whereCol string, whereValue string, comparator s
 		for j := range values {
 
 			// if colVal matches whereValue
-
 			if strings.EqualFold(strings.TrimSpace(comparator), "GREATER_THAN") {
 
 				if j == whereColOffset {
 					curVal := strings.TrimSpace(values[j])
 					whereVal := strings.TrimSpace(whereValue)
 
+					// parse existing values into floats to allow comparison
 					curValFloat, err := strconv.ParseFloat(curVal, 32)
 					if err != nil {
 						fmt.Println(err)
 						os.Exit(1)
 					}
+
 					whereValFloat, err2 := strconv.ParseFloat(whereVal, 32)
 					if err2 != nil {
 						fmt.Println(err)
@@ -374,22 +334,7 @@ func DeleteRecord(table string, whereCol string, whereValue string, comparator s
 					}
 
 					if curValFloat > whereValFloat {
-						// open up another instance of table file
-						input, err := ioutil.ReadFile(path + database + "/" + table)
-						if err != nil {
-							fmt.Println(err)
-							os.Exit(1)
-						}
-
-						// replace the record with our new record
-						output := bytes.Replace(input, []byte(record), []byte(""), -1)
-
-						// save write to the new file
-						if err = ioutil.WriteFile(path+database+"/"+table, output, 0666); err != nil {
-							fmt.Println(err)
-							os.Exit(1)
-						}
-
+						removeRecord(table, record)
 						// save the last updated index
 						recordsModified++
 					}
@@ -398,23 +343,7 @@ func DeleteRecord(table string, whereCol string, whereValue string, comparator s
 			} else if strings.EqualFold(strings.TrimSpace(comparator), "EQUALS") {
 
 				if strings.EqualFold(strings.TrimSpace(values[j]), strings.TrimSpace(whereValue)) {
-					// open up another instance of table file
-					input, err := ioutil.ReadFile(path + database + "/" + table)
-					if err != nil {
-						fmt.Println(err)
-						os.Exit(1)
-					}
-
-					// replace the record with our new record
-					output := bytes.Replace(input, []byte(record), []byte(""), -1)
-
-					// save write to the new file
-					if err = ioutil.WriteFile(path+database+"/"+table, output, 0666); err != nil {
-						fmt.Println(err)
-						os.Exit(1)
-					}
-
-					// save the last updated index
+					removeRecord(table, record)
 					recordsModified++
 				}
 			}
@@ -422,6 +351,82 @@ func DeleteRecord(table string, whereCol string, whereValue string, comparator s
 	}
 
 	return recordsModified
+}
+
+//
+//			Helper functions
+//
+
+func getIndexOfColName(colNames []string, colName string) int {
+	var index int
+
+	for i := range colNames {
+		if colNames[i] == colName {
+			index = i
+		}
+	}
+
+	return index
+}
+
+func getTableColNames(table string) []string {
+	f, err := os.Open(path + database + "/" + table)
+	check(err)
+	defer f.Close()
+
+	reader := bufio.NewReader(f)
+	tableMetaLine, _ := reader.ReadString('\n')
+	colDefs := strings.Split(tableMetaLine, "|")
+
+	colNames := make([]string, 0, len(colDefs))
+	for i := range colDefs {
+		colNames = append(colNames, strings.Fields(colDefs[i])[0])
+	}
+	return colNames
+}
+
+func replaceRecord(table string, record string, newRecord string) {
+	lockTable(table)
+
+	// open up another instance of table file
+	input, err := ioutil.ReadFile(path + database + "/" + table)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	// replace the record with our new record
+	output := bytes.Replace(input, []byte(record), []byte(newRecord), -1)
+
+	// save write to the new file
+	if err = ioutil.WriteFile(path+database+"/"+table, output, 0666); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	unlockTable(table)
+}
+
+func removeRecord(table string, record string) {
+	lockTable(table)
+
+	// open up another instance of table file
+	input, err := ioutil.ReadFile(path + database + "/" + table)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	// replace the record with our new record
+	output := bytes.Replace(input, []byte(record), []byte(""), -1)
+
+	// save write to the new file
+	if err = ioutil.WriteFile(path+database+"/"+table, output, 0666); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	unlockTable(table)
 }
 
 func getAmountOfRecordsInTable(table string) int {
@@ -434,23 +439,17 @@ func getAmountOfRecordsInTable(table string) int {
 	return recordCount
 }
 
+func lockTable(table string) {}
+
+func unlockTable(table string) {}
+
+func dropTable() {}
+
 func open() {}
 
 func commit() {}
 
 func close() {}
-
-func createTable() {}
-
-func lockTable() {}
-
-func unlockTable() {}
-
-func dropTable() {}
-
-//
-//			Helper functions
-//
 
 func check(e error) {
 	if e != nil {

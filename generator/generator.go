@@ -272,7 +272,6 @@ func generateUpdate(statement tokenizer.Statement) Operation {
 			return errors.New("!Failed to query table " + table + " because it does not exist.")
 		}
 
-		// TODO: better assertions
 		return nil
 	}
 
@@ -304,7 +303,6 @@ func generateDelete(statement tokenizer.Statement) Operation {
 			return errors.New("!Failed to query table " + table + " because it does not exist.")
 		}
 
-		// TODO: better assertions
 		return nil
 	}
 
@@ -334,19 +332,15 @@ func getAllTokensOfName(statement tokenizer.Statement, name string) []string {
 
 func getFirstTokenOfName(statement tokenizer.Statement, name string) string {
 	for _, token := range statement.Tokens {
-		// fmt.Println("Token.Name: " + token.Name)
 		if token.Name == name {
 			return token.Special
 		}
 	}
-	// TODO: handle err
+
 	panic("Token " + name + " doesn't exist")
-	// fmt.Println("Token " + name + " doesn't exist")
-	// return ""
 }
 
 func getSecondTokenOfName(statement tokenizer.Statement, name string) string {
-	// fmt.Println("hit")
 	foundFirst := false
 	for _, token := range statement.Tokens {
 		if token.Name == name {
@@ -357,10 +351,8 @@ func getSecondTokenOfName(statement tokenizer.Statement, name string) string {
 			foundFirst = true
 		}
 	}
-	// TODO: handle err
+
 	panic("Token " + name + " doesn't exist")
-	// fmt.Println("Token " + name + " doesn't exist")
-	// return ""
 }
 
 func getThirdTokenOfName(statement tokenizer.Statement, name string) string {
@@ -379,7 +371,7 @@ func getThirdTokenOfName(statement tokenizer.Statement, name string) string {
 			foundFirst = true
 		}
 	}
-	// TODO: handle err
+
 	panic("Token " + name + " doesn't exist")
 }
 
@@ -392,7 +384,6 @@ func removeOuterParenthesis(columns []string, constraints []string) ([]string, [
 	return columns, constraints
 }
 
-// TOFIX: already   gone
 func removeOuterParenthesisFromValues(values []string) []string {
 	values[0] = strings.Replace(values[0], "(", "", 1)
 	values[len(values)-1] = strings.Replace(values[len(values)-1], ")", "", 1)
