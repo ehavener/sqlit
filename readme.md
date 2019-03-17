@@ -1,6 +1,6 @@
 <!-- markdownlint-disable -->
 
-# CS 457 Programming Assignment 1: Metadata Management
+# CS 457 Programming Assignment 2: Basic Data Manipulation
 
 ## Running
 
