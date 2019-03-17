@@ -20,19 +20,19 @@ update Product
 set price = 14.99 
 where name = 'Gizmo';
 
--- select * from Product;
+select * from Product;
 
--- delete from product 
--- where name = 'Gizmo';
+delete from product 
+where name = 'Gizmo';
 
--- delete from product 
--- where price > 150;
+delete from product 
+where price > 150;
 
--- select * from Product;
+select * from Product;
 
--- select name, price 
--- from product 
--- where pid != 2;
+select name, price 
+from product 
+where pid != 2;
 
 .exit
 

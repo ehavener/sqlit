@@ -25,6 +25,14 @@ var cleanPtr *bool
 // DebugPtr toggles global printing of debugging statements
 var DebugPtr *bool
 
+const (
+	InfoColor    = "\033[1;34m%s\033[0m"
+	NoticeColor  = "\033[1;36m%s\033[0m"
+	WarningColor = "\033[1;33m%s\033[0m"
+	ErrorColor   = "\033[1;31m%s\033[0m"
+	DebugColor   = "\033[0;36m%s\033[0m"
+)
+
 func main() {
 
 	createTmpDirectory()
@@ -59,16 +67,20 @@ func launchConsole() {
 	reader := bufio.NewReader(os.Stdin)
 	partialStatementBuffer := make([]string, 0, 1000)
 
+	lastLineWasEmpty := false
+
 	fmt.Println("🔥")
 
 	for {
-		fmt.Print("sqlit> ")
+		if lastLineWasEmpty == false {
+			fmt.Printf(WarningColor, "sqlit> ")
+		}
 
 		line, _ := reader.ReadString('\n')
 
-		line = filterComment(line)
-		line = filterNewline(line)
-		line = filterReturn(line)
+		line = removeComment(line)
+		line = removeNewline(line)
+		line = removeReturn(line)
 
 		if strings.EqualFold(".EXIT", line) == true {
 			fmt.Println("All done.")
@@ -76,13 +88,16 @@ func launchConsole() {
 		}
 
 		if len(line) <= 1 {
+			lastLineWasEmpty = true
 			continue
+		} else {
+			lastLineWasEmpty = false
 		}
 
 		if includesDelimiter(line) == false {
-			partialStatementBuffer = append(partialStatementBuffer, line)
+			partialStatementBuffer = append(partialStatementBuffer, line+" ")
 		} else {
-			line = filterDelimiter(line)
+			line = removeDelimiter(line)
 
 			statement := strings.Join(partialStatementBuffer, " ") + line
 
@@ -113,16 +128,17 @@ func processLine(line string) {
 	// Make sure our query is valid before we request resources
 	err := operation.Assert()
 	if err != nil {
-		fmt.Println(err)
+		fmt.Printf(ErrorColor, err)
 		return
 	}
 
 	// Finally, execute our query
 	success, err := operation.Invoke()
 	if err != nil {
-		fmt.Println(err)
+		fmt.Printf(ErrorColor, err)
 	} else {
-		fmt.Println(success)
+		fmt.Printf(DebugColor, success)
+		fmt.Println()
 	}
 }
 
@@ -138,7 +154,7 @@ func createTmpDirectory() {
 	}
 }
 
-func filterComment(line string) string {
+func removeComment(line string) string {
 	if strings.HasPrefix(line, "--") {
 		return ""
 	}
@@ -146,15 +162,15 @@ func filterComment(line string) string {
 	return line
 }
 
-func filterReturn(line string) string {
+func removeReturn(line string) string {
 	return strings.Replace(line, "\r", "", -1)
 }
 
-func filterNewline(line string) string {
+func removeNewline(line string) string {
 	return strings.Replace(line, "\n", "", -1)
 }
 
-func filterDelimiter(line string) string {
+func removeDelimiter(line string) string {
 	return strings.Replace(line, ";", "", -1)
 }
 

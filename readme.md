@@ -7,7 +7,7 @@ The quickest way to test the program is to just run a precompiled build
 ```sh
 > cd sqlit/
 > ./sqlit-linux-386
-``` 
+```
 
 ## Building
 
@@ -16,13 +16,13 @@ To build the source, first make sure go is installed:
 ```sh
 > sudo apt install golang-go
 > go version
-``` 
+```
 
 Export your gopath
 
 ```sh
 > export GOPATH=$HOME/go
-``` 
+```
 
 Then move the project directory to the default go workspace directory:
 
@@ -32,13 +32,13 @@ Then move the project directory to the default go workspace directory:
 > cd $HOME/go/src
 ```
 
-And build & run! 
+And build & run!
 
 ```sh
-> go install sqlit 
+> go install sqlit
 > cd ~/go/bin # default build output dir
 > ./sqlit
-``` 
+```
 
 The clean flag  deletes all databases (stored in the sqlit/tmp directory) before running.
 
@@ -46,8 +46,14 @@ The clean flag  deletes all databases (stored in the sqlit/tmp directory) before
 > go run sqlit --clean
 ```
 
-If these steps don't work, there might be a problem with your $GOPATH. Check the docs: 
-[https://golang.org/doc/code.html](https://golang.org/doc/code.html) 
+A test script can be piped in as so:
+
+```sh
+> go run sqlit --clean < test/PA2_test.sql
+```
+
+If these steps don't work, there might be a problem with your $GOPATH. Check the docs:
+[https://golang.org/doc/code.html](https://golang.org/doc/code.html)
 
 ## Implementation
 
@@ -59,7 +65,7 @@ Databases are represented as directories, just as mentioned in the project spec.
 
 ## Managing multiple tables
 
-Each table is a file nested within its database. The constraint metadata is stored in the first line of the table file, again, just as mentioned in the project spec. One goal is to implement all tables in a single file, to allow for pagination and large tables. 
+Each table is a file nested within its database. The constraint metadata is stored in the first line of the table file, again, just as mentioned in the project spec. One goal is to implement all tables in a single file, to allow for pagination and large tables.
 
 
 ## Resources
