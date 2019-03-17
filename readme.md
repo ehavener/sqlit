@@ -105,7 +105,3 @@ Multi platform build script
 [https://gist.github.com/DimaKoz](https://gist.github.com/DimaKoz/06b7475317b12e7ffa724ef0e115a4ec)
 
 Auto build go project on changes [https://github.com/canthefason/go-watcher](https://github.com/canthefason/go-watcher)
-
-## Notepad
-
-./sqlit < test/PA1_test.sql
