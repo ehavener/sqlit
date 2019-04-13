@@ -47,6 +47,27 @@ func TokenizeStatement(rawStatement string) Statement {
 
 	rawWords := strings.Fields(rawStatement)
 
+	commentIndex := -1
+
+	fmt.Println("-----")
+	fmt.Println(rawWords)
+
+	for index, rawWord := range rawWords {
+		if strings.Contains(rawWord, "--") {
+			fmt.Println("commentIndex")
+			fmt.Println(index)
+			commentIndex = index
+		}
+	}
+
+	if commentIndex > -1 {
+		fmt.Println("commentIndex > -0")
+		rawWords = rawWords[:len(rawWords)-commentIndex-1]
+		fmt.Println(rawWords)
+	}
+
+	fmt.Println("-----")
+
 	tokens := make([]Token, 0, len(rawWords))
 
 	for _, rawWord := range rawWords {

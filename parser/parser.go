@@ -53,19 +53,21 @@ var specialNames = map[string]string{
 
 // Types are general classes for statements
 var Types = map[string]string{
-	"CREATE_DATABASE": "CREATE_DATABASE",
-	"DROP_DATABASE":   "DROP_DATABASE",
-	"USE_DATABASE":    "USE_DATABASE",
-	"CREATE_TABLE":    "CREATE_TABLE",
-	"DROP_TABLE":      "DROP_TABLE",
-	"ALTER_TABLE":     "ALTER_TABLE",
-	"INSERT":          "INSERT",
-	"SELECT":          "SELECT",
-	"SELECT_INNER":    "SELECT_INNER",
-	"SELECT_LEFT":    "SELECT_LEFT",
-	"SELECT_MULTIPLE": "SELECT_MULTIPLE",
-	"UPDATE":          "UPDATE",
-	"DELETE":          "DELETE",
+	"CREATE_DATABASE":    "CREATE_DATABASE",
+	"DROP_DATABASE":      "DROP_DATABASE",
+	"USE_DATABASE":       "USE_DATABASE",
+	"CREATE_TABLE":       "CREATE_TABLE",
+	"DROP_TABLE":         "DROP_TABLE",
+	"ALTER_TABLE":        "ALTER_TABLE",
+	"INSERT":             "INSERT",
+	"SELECT":             "SELECT",
+	"SELECT_INNER":       "SELECT_INNER",
+	"SELECT_LEFT":        "SELECT_LEFT",
+	"SELECT_MULTIPLE":    "SELECT_MULTIPLE",
+	"UPDATE":             "UPDATE",
+	"DELETE":             "DELETE",
+	"BEGIN_TRANSACTION":  "BEGIN_TRANSACTION",
+	"COMMIT_TRANSACTION": "COMMIT_TRANSACTION",
 }
 
 // ParseStatement ....
