@@ -93,6 +93,15 @@ SelectWhere() will
 - read through a table, accumulating the values at the specified columns which pass the clause
 - output the temporary table
 
+## Programming Assignment 3: Table Joins
+
+A new data structure is added, Sets. 
+
+- implement table joins using techniques we discussed in the class (e.g., nested loop)
+  - nestedloop, index or mergesort
+- clearly explain how your program joins tuples from two source tables
+- how you implement different joins.
+
 ## Resources
 
 SQLite Architecture

@@ -40,33 +40,13 @@ type Statement struct {
 func TokenizeStatement(rawStatement string) Statement {
 	fmt.Println(rawStatement)
 
-	// format PA3 & PA4
 	rawStatement = strings.Replace(rawStatement, "(", " (", 1)
 	rawStatement = strings.Replace(rawStatement, ",", ", ", 1)
 	rawStatement = strings.Replace(rawStatement, ".", " ", 2)
 
 	rawWords := strings.Fields(rawStatement)
 
-	commentIndex := -1
-
-	fmt.Println("-----")
-	fmt.Println(rawWords)
-
-	for index, rawWord := range rawWords {
-		if strings.Contains(rawWord, "--") {
-			fmt.Println("commentIndex")
-			fmt.Println(index)
-			commentIndex = index
-		}
-	}
-
-	if commentIndex > -1 {
-		fmt.Println("commentIndex > -0")
-		rawWords = rawWords[:len(rawWords)-commentIndex-1]
-		fmt.Println(rawWords)
-	}
-
-	fmt.Println("-----")
+	rawWords = removeInlineComments(rawWords)
 
 	tokens := make([]Token, 0, len(rawWords))
 
@@ -77,6 +57,23 @@ func TokenizeStatement(rawStatement string) Statement {
 	statement := Statement{Tokens: tokens}
 
 	return statement
+}
+
+// removeInlineComments removes all words / characters in a line that proceed a "--"
+func removeInlineComments(rawWords []string) []string {
+	commentIndex := -1
+
+	for index, rawWord := range rawWords {
+		if strings.Contains(rawWord, "--") {
+			commentIndex = index
+		}
+	}
+
+	if commentIndex > -1 {
+		rawWords = rawWords[:len(rawWords)-commentIndex-1]
+	}
+
+	return rawWords
 }
 
 // TokenizeWord maps a string to a token and classifies it

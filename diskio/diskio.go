@@ -22,25 +22,26 @@ const (
 
 var database string
 
-// ColumnDef ...
+// ColumnDef is a name & type pair that represents a single col header in a table
 type ColumnDef struct {
 	ColumnName string
 	TypeName   string
 }
 
-// Set ...
+// Set is essentially an in-memory soft copy of a table,
 type Set struct {
 	Name       string
 	ColumnDefs []ColumnDef
-	Records     [][]string
+	Records    [][]string
 }
 
-// SerializeSet ...
+// SerializeSet creates a string representation of a Set,
+// (the same format that is persisted to disk as a table)
 func SerializeSet(set Set) string {
 	return SerializeColumnDefs(set.ColumnDefs) + "\n" + SerializeRecords(set.Records)
 }
 
-// SerializeColumnDefs ...
+// SerializeColumnDefs creates a string representation of a set's column def header row
 func SerializeColumnDefs(columnDefs []ColumnDef) string {
 	var serializedColumnDef string
 
@@ -54,7 +55,7 @@ func SerializeColumnDefs(columnDefs []ColumnDef) string {
 	return serializedColumnDef
 }
 
-// ConstructColumnDefs ...
+// ConstructColumnDefs parses serialized column defs into their struct counterpart
 func ConstructColumnDefs(columnDefsLine string) []ColumnDef {
 	columnDefsPairs := strings.Split(columnDefsLine, "|")
 
@@ -68,14 +69,15 @@ func ConstructColumnDefs(columnDefsLine string) []ColumnDef {
 	return columnDefs
 }
 
-// SerializeRecords ...
+// SerializeRecords creates a string representation of a set's records,
+// using the same format as persisted table records
 func SerializeRecords(records [][]string) string {
 	var recordsSerialized string
 
 	for _, row := range records {
 		for colIndex, col := range row {
 			recordsSerialized += strings.Replace(col, "\n", "", -1)
-			if (colIndex +  1) < len(row) {
+			if (colIndex + 1) < len(row) {
 				recordsSerialized += "|"
 			} else {
 				recordsSerialized += "\n"
@@ -86,9 +88,8 @@ func SerializeRecords(records [][]string) string {
 	return recordsSerialized
 }
 
-// ConstructRecords ...
+// ConstructRecords parses serialized records into ta 2D matrix
 func ConstructRecords(reader *bufio.Reader, recordAmount int) [][]string {
-
 	records := make([][]string, recordAmount)
 
 	for i := range records {
@@ -102,7 +103,7 @@ func ConstructRecords(reader *bufio.Reader, recordAmount int) [][]string {
 	return records
 }
 
-// SelectSet ...
+// SelectSet fully parses a table into a set, it's basically an in-memory SelectAll
 func SelectSet(tableName string) Set {
 	// open the table file contents
 	f, err := os.Open(path + database + "/" + tableName)
@@ -111,21 +112,16 @@ func SelectSet(tableName string) Set {
 
 	// read in the metadata line, parse the table's col names
 	reader := bufio.NewReader(f)
+
 	columnDefsLine, _ := reader.ReadString('\n')
 
 	recordAmount := getAmountOfRecordsInTable(tableName)
 
 	columnDefs := ConstructColumnDefs(columnDefsLine)
-	// columnDefsSerialized := SerializeColumnDefs(columnDefs)
-	// fmt.Println("columnDefsSerialized: " + columnDefsSerialized)
 
 	records := ConstructRecords(reader, recordAmount)
-	// recordsSerialized := SerializeRecords(records)
-	// fmt.Println("recordsSerialized: " + recordsSerialized)
 
 	set := Set{Name: tableName, ColumnDefs: columnDefs, Records: records}
-	// setSerialized := SerializeSet(set)
-	// fmt.Println("setSerialized: " + setSerialized)
 
 	return set
 }

@@ -5,7 +5,7 @@
 package parser
 
 import (
-	"fmt"
+	// "fmt"
 	"sqlit/tokenizer"
 	"strings"
 )
@@ -301,8 +301,6 @@ func parseInsert(statement tokenizer.Statement) tokenizer.Statement {
 	setSpecialNameIfTokenExists(statement, 2, specialNames["TABLE_NAME"])
 
 	setSpecialNameIfTokenExists(statement, 3, specialNames["VALUES"])
-
-	fmt.Println("")
 
 	for i := 4; i < len(statement.Tokens); i++ {
 		setSpecialNameIfTokenExists(statement, i, specialNames["VALUE"])
