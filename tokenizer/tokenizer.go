@@ -43,6 +43,7 @@ func TokenizeStatement(rawStatement string) Statement {
 	// format PA3 & PA4
 	rawStatement = strings.Replace(rawStatement, "(", " (", 1)
 	rawStatement = strings.Replace(rawStatement, ",", ", ", 1)
+	rawStatement = strings.Replace(rawStatement, ".", " ", 2)
 
 	rawWords := strings.Fields(rawStatement)
 

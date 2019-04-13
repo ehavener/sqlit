@@ -42,6 +42,13 @@ var specialNames = map[string]string{
 	"WHERE":         "WHERE",
 	"INTO":          "INTO",
 	"VALUES":        "VALUES",
+	"SET_NAME":      "SET_NAME",
+	"INNER":         "INNER",
+	"JOIN":          "JOIN",
+	"ON":            "ON",
+	"LEFT":          "LEFT",
+	"OUTER":         "OUTER",
+	"SET_COL_NAME":  "SET_COL_NAME",
 }
 
 // Types are general classes for statements
@@ -54,6 +61,9 @@ var Types = map[string]string{
 	"ALTER_TABLE":     "ALTER_TABLE",
 	"INSERT":          "INSERT",
 	"SELECT":          "SELECT",
+	"SELECT_INNER":    "SELECT_INNER",
+	"SELECT_OUTER":    "SELECT_OUTER",
+	"SELECT_MULTIPLE": "SELECT_MULTIPLE",
 	"UPDATE":          "UPDATE",
 	"DELETE":          "DELETE",
 }
@@ -210,6 +220,50 @@ func parseSelect(statement tokenizer.Statement) tokenizer.Statement {
 		if strings.EqualFold(statement.Tokens[2].Special, "FROM") {
 			setSpecialNameIfTokenExists(statement, 2, specialNames["FROM"])
 			setSpecialNameIfTokenExists(statement, 3, specialNames["TABLE_NAME"])
+
+			if len(statement.Tokens) >= 5 {
+				setSpecialNameIfTokenExists(statement, 4, specialNames["SET_NAME"])
+			}
+
+			if len(statement.Tokens) >= 5 {
+				if strings.EqualFold(statement.Tokens[5].Special, "inner") {
+					statement.Type = Types["SELECT_INNER"]
+					setSpecialNameIfTokenExists(statement, 5, specialNames["INNER"])
+					setSpecialNameIfTokenExists(statement, 6, specialNames["JOIN"])
+					setSpecialNameIfTokenExists(statement, 7, specialNames["TABLE_NAME"])
+					setSpecialNameIfTokenExists(statement, 8, specialNames["SET_NAME"])
+					setSpecialNameIfTokenExists(statement, 9, specialNames["ON"])
+					setSpecialNameIfTokenExists(statement, 10, specialNames["SET_NAME"])
+					setSpecialNameIfTokenExists(statement, 11, specialNames["SET_COL_NAME"])
+					setSpecialNameIfTokenExists(statement, 12, specialNames["EQUALS"])
+					setSpecialNameIfTokenExists(statement, 13, specialNames["SET_NAME"])
+					setSpecialNameIfTokenExists(statement, 14, specialNames["SET_COL_NAME"])
+				} else if strings.EqualFold(statement.Tokens[5].Special, "left") {
+					statement.Type = Types["SELECT_OUTER"]
+					setSpecialNameIfTokenExists(statement, 5, specialNames["LEFT"])
+					setSpecialNameIfTokenExists(statement, 6, specialNames["OUTER"])
+					setSpecialNameIfTokenExists(statement, 7, specialNames["JOIN"])
+					setSpecialNameIfTokenExists(statement, 8, specialNames["TABLE_NAME"])
+					setSpecialNameIfTokenExists(statement, 9, specialNames["SET_NAME"])
+					setSpecialNameIfTokenExists(statement, 10, specialNames["ON"])
+					setSpecialNameIfTokenExists(statement, 11, specialNames["SET_NAME"])
+					setSpecialNameIfTokenExists(statement, 12, specialNames["SET_COL_NAME"])
+					setSpecialNameIfTokenExists(statement, 13, specialNames["EQUALS"])
+					setSpecialNameIfTokenExists(statement, 14, specialNames["SET_NAME"])
+					setSpecialNameIfTokenExists(statement, 15, specialNames["SET_COL_NAME"])
+				} else {
+					statement.Type = Types["SELECT_MULTIPLE"]
+					setSpecialNameIfTokenExists(statement, 5, specialNames["TABLE_NAME"])
+					setSpecialNameIfTokenExists(statement, 6, specialNames["SET_NAME"])
+					setSpecialNameIfTokenExists(statement, 7, specialNames["WHERE"])
+					setSpecialNameIfTokenExists(statement, 8, specialNames["SET_COL_NAME"])
+					setSpecialNameIfTokenExists(statement, 9, specialNames["SET_NAME"])
+					setSpecialNameIfTokenExists(statement, 10, specialNames["EQUALS"])
+					setSpecialNameIfTokenExists(statement, 11, specialNames["SET_NAME"])
+					setSpecialNameIfTokenExists(statement, 12, specialNames["SET_COL_NAME"])
+				}
+			}
+
 		}
 	}
 

@@ -7,6 +7,7 @@ package generator
 
 import (
 	"errors"
+	"fmt"
 	"sqlit/diskio"
 	"sqlit/parser"
 	"sqlit/tokenizer"
@@ -39,6 +40,12 @@ func Generate(statement tokenizer.Statement) Operation {
 		operation = generateDropTable(statement)
 	case parser.Types["SELECT"]:
 		operation = generateSelect(statement)
+	case parser.Types["SELECT_INNER"]:
+		operation = generateSelectInnerJoin(statement)
+	case parser.Types["SELECT_OUTER"]:
+		operation = generateSelectOuterJoin(statement)
+	case parser.Types["SELECT_MULTIPLE"]:
+		operation = generateSelectMultiple(statement)
 	case parser.Types["INSERT"]:
 		operation = generateInsert(statement)
 	case parser.Types["UPDATE"]:
@@ -219,6 +226,108 @@ func generateSelect(statement tokenizer.Statement) Operation {
 
 			result = diskio.SelectWhere(name, colNames, whereColName, whereColVal)
 		}
+		return result, nil
+	}
+
+	return Operation{Assert: assert, Invoke: invoke}
+}
+
+func generateSelectMultiple(statement tokenizer.Statement) Operation {
+
+	// firstTableName := getFirstTokenOfName(statement, "TABLE_NAME")
+	// firstTableSetName := getFirstTokenOfName(statement, "SET_NAME")
+	// firstTableSetWhereCol := getFirstTokenOfName(statement, "SET_COL_NAME")
+
+	secondTableName := getSecondTokenOfName(statement, "TABLE_NAME")
+	// secondTableSetName := getSecondTokenOfName(statement, "SET_NAME")
+	// secondTableSetWhereColName := getSecondTokenOfName(statement, "SET_COL_NAME")
+
+	assert := func() error {
+		return nil
+	}
+
+	invoke := func() (string, error) {
+		var result string
+
+		// if clause == "ALL" {
+		// 	result = diskio.SelectAll(name)
+		// } else {
+		// 	name := getFirstTokenOfName(statement, "TABLE_NAME")
+
+		// var colNames []string
+
+		// colNames = append(colNames, getFirstTokenOfName(statement, "COL_NAME"))
+		// colNames = append(colNames, getSecondTokenOfName(statement, "COL_NAME"))
+
+		// whereColName := getThirdTokenOfName(statement, "COL_NAME")
+		// whereColVal := getFirstTokenOfName(statement, "COL_VALUE")
+
+		// colNames = removeCommas(colNames)
+
+		set := diskio.SelectTest(secondTableName)
+		result = diskio.SerializeSet(set)
+
+		fmt.Println(result)
+
+		// }
+		return result, nil
+	}
+
+	return Operation{Assert: assert, Invoke: invoke}
+}
+
+func generateSelectInnerJoin(statement tokenizer.Statement) Operation {
+
+	assert := func() error {
+		return nil
+	}
+
+	invoke := func() (string, error) {
+		// select where from
+		firstTableName := getFirstTokenOfName(statement, "TABLE_NAME")
+		secondTableName := getSecondTokenOfName(statement, "TABLE_NAME")
+
+		firstSetName := getFirstTokenOfName(statement, "TABLE_NAME")
+		secondSetName := getSecondTokenOfName(statement, "TABLE_NAME")
+
+		var firstSet string
+		var secondSet string
+
+		firstSet = diskio.SelectAll(firstTableName)
+		secondSet = diskio.SelectAll(secondTableName)
+
+		fmt.Println(firstSetName + secondSetName + firstSet + secondSet)
+
+		var result string
+		return result, nil
+	}
+
+	return Operation{Assert: assert, Invoke: invoke}
+}
+
+func generateSelectOuterJoin(statement tokenizer.Statement) Operation {
+
+	assert := func() error {
+		return nil
+	}
+
+	invoke := func() (string, error) {
+		// select where from
+		firstTableName := getFirstTokenOfName(statement, "TABLE_NAME")
+		secondTableName := getSecondTokenOfName(statement, "TABLE_NAME")
+
+		firstSetName := getFirstTokenOfName(statement, "TABLE_NAME")
+		secondSetName := getSecondTokenOfName(statement, "TABLE_NAME")
+
+		var firstSet string
+		var secondSet string
+
+		firstSet = diskio.SelectAll(firstTableName)
+		secondSet = diskio.SelectAll(secondTableName)
+
+		fmt.Println(firstSetName + secondSetName + firstSet + secondSet)
+
+		var result string
 		return result, nil
 	}
 

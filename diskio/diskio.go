@@ -22,6 +22,112 @@ const (
 
 var database string
 
+// ColumnDef ...
+type ColumnDef struct {
+	ColumnName string
+	TypeName   string
+}
+
+// Set ...
+type Set struct {
+	Name       string
+	ColumnDefs []ColumnDef
+	Values     [][]string
+}
+
+// SerializeSet ...
+func SerializeSet(set Set) string {
+	return SerializeColumnDefs(set.ColumnDefs) + "\n" + SerializeValues(set.Values)
+}
+
+// SerializeColumnDefs ...
+func SerializeColumnDefs(columnDefs []ColumnDef) string {
+	var serializedColumnDef string
+
+	for index, columnDef := range columnDefs {
+		serializedColumnDef += columnDef.ColumnName + " " + columnDef.TypeName
+		if (index + 1) < len(columnDefs) {
+			serializedColumnDef += "|"
+		}
+	}
+
+	return serializedColumnDef
+}
+
+// ConstructColumnDefs ...
+func ConstructColumnDefs(columnDefsLine string) []ColumnDef {
+	columnDefsPairs := strings.Split(columnDefsLine, "|")
+
+	var columnDefs []ColumnDef
+
+	for _, columnDefsPair := range columnDefsPairs {
+		columnDefsPair := strings.Fields(columnDefsPair)
+		columnDefs = append(columnDefs, ColumnDef{ColumnName: columnDefsPair[0], TypeName: columnDefsPair[1]})
+	}
+
+	return columnDefs
+}
+
+// SerializeValues ...
+func SerializeValues(values [][]string) string {
+	var valuesSerialized string
+
+	for i := range values {
+		for j := range values[i] {
+			valuesSerialized += values[i][j]
+			if (j + 1) < len(values[i]) {
+				valuesSerialized += "|"
+			}
+		}
+	}
+
+	return valuesSerialized
+}
+
+// ConstructValues ...
+func ConstructValues(reader *bufio.Reader, recordAmount int) [][]string {
+
+	values := make([][]string, recordAmount)
+
+	for i := range values {
+		valuesLine, _ := reader.ReadString('\n')
+		valuesPair := strings.Split(valuesLine, "|")
+		values[i] = make([]string, 2)
+		values[i][0] = valuesPair[0]
+		values[i][1] = valuesPair[1]
+	}
+
+	return values
+}
+
+// SelectTest ...
+func SelectTest(tableName string) Set {
+	// open the table file contents
+	f, err := os.Open(path + database + "/" + tableName)
+	check(err)
+	defer f.Close()
+
+	// read in the metadata line, parse the table's col names
+	reader := bufio.NewReader(f)
+	columnDefsLine, _ := reader.ReadString('\n')
+
+	recordAmount := getAmountOfRecordsInTable(tableName)
+
+	columnDefs := ConstructColumnDefs(columnDefsLine)
+	columnDefsSerialized := SerializeColumnDefs(columnDefs)
+	fmt.Println("columnDefsSerialized: " + columnDefsSerialized)
+
+	values := ConstructValues(reader, recordAmount)
+	valuesSerialized := SerializeValues(values)
+	fmt.Println("valuesSerialized: " + valuesSerialized)
+
+	set := Set{Name: tableName, ColumnDefs: columnDefs, Values: values}
+	setSerialized := SerializeSet(set)
+	fmt.Println("setSerialized: " + setSerialized)
+
+	return set
+}
+
 // CheckIfDatabaseExists checks if a database directory exists
 func CheckIfDatabaseExists(name string) bool {
 	_, err := os.Stat(path + name)
@@ -137,7 +243,7 @@ func SelectWhere(table string, colNames []string, whereColName string, whereColV
 	tableMetaLine, _ := reader.ReadString('\n')
 	colDefs := strings.Split(tableMetaLine, "|")
 
-	// find pernient offsets of clause
+	// find pertinent offsets of clause
 	var firstColOffset int
 	var secondColOffset int
 	var whereColOffset int

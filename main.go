@@ -101,10 +101,6 @@ func processLine(line string) {
 	// Break our line of input up into tokens
 	statement := tokenizer.TokenizeStatement(line)
 
-	if *DebugPtr {
-		tokenizer.PrintStatement(statement)
-	}
-
 	// Give them some syntactical meaning
 	statement = parser.ParseStatement(statement)
 
