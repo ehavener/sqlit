@@ -32,12 +32,12 @@ type ColumnDef struct {
 type Set struct {
 	Name       string
 	ColumnDefs []ColumnDef
-	Values     [][]string
+	Records     [][]string
 }
 
 // SerializeSet ...
 func SerializeSet(set Set) string {
-	return SerializeColumnDefs(set.ColumnDefs) + "\n" + SerializeValues(set.Values)
+	return SerializeColumnDefs(set.ColumnDefs) + "\n" + SerializeRecords(set.Records)
 }
 
 // SerializeColumnDefs ...
@@ -68,40 +68,42 @@ func ConstructColumnDefs(columnDefsLine string) []ColumnDef {
 	return columnDefs
 }
 
-// SerializeValues ...
-func SerializeValues(values [][]string) string {
-	var valuesSerialized string
+// SerializeRecords ...
+func SerializeRecords(records [][]string) string {
+	var recordsSerialized string
 
-	for i := range values {
-		for j := range values[i] {
-			valuesSerialized += values[i][j]
-			if (j + 1) < len(values[i]) {
-				valuesSerialized += "|"
+	for _, row := range records {
+		for colIndex, col := range row {
+			recordsSerialized += strings.Replace(col, "\n", "", -1)
+			if (colIndex +  1) < len(row) {
+				recordsSerialized += "|"
+			} else {
+				recordsSerialized += "\n"
 			}
 		}
 	}
 
-	return valuesSerialized
+	return recordsSerialized
 }
 
-// ConstructValues ...
-func ConstructValues(reader *bufio.Reader, recordAmount int) [][]string {
+// ConstructRecords ...
+func ConstructRecords(reader *bufio.Reader, recordAmount int) [][]string {
 
-	values := make([][]string, recordAmount)
+	records := make([][]string, recordAmount)
 
-	for i := range values {
-		valuesLine, _ := reader.ReadString('\n')
-		valuesPair := strings.Split(valuesLine, "|")
-		values[i] = make([]string, 2)
-		values[i][0] = valuesPair[0]
-		values[i][1] = valuesPair[1]
+	for i := range records {
+		recordsLine, _ := reader.ReadString('\n')
+		recordsPair := strings.Split(recordsLine, "|")
+		records[i] = make([]string, 2)
+		records[i][0] = recordsPair[0]
+		records[i][1] = recordsPair[1]
 	}
 
-	return values
+	return records
 }
 
-// SelectTest ...
-func SelectTest(tableName string) Set {
+// SelectSet ...
+func SelectSet(tableName string) Set {
 	// open the table file contents
 	f, err := os.Open(path + database + "/" + tableName)
 	check(err)
@@ -114,16 +116,16 @@ func SelectTest(tableName string) Set {
 	recordAmount := getAmountOfRecordsInTable(tableName)
 
 	columnDefs := ConstructColumnDefs(columnDefsLine)
-	columnDefsSerialized := SerializeColumnDefs(columnDefs)
-	fmt.Println("columnDefsSerialized: " + columnDefsSerialized)
+	// columnDefsSerialized := SerializeColumnDefs(columnDefs)
+	// fmt.Println("columnDefsSerialized: " + columnDefsSerialized)
 
-	values := ConstructValues(reader, recordAmount)
-	valuesSerialized := SerializeValues(values)
-	fmt.Println("valuesSerialized: " + valuesSerialized)
+	records := ConstructRecords(reader, recordAmount)
+	// recordsSerialized := SerializeRecords(records)
+	// fmt.Println("recordsSerialized: " + recordsSerialized)
 
-	set := Set{Name: tableName, ColumnDefs: columnDefs, Values: values}
-	setSerialized := SerializeSet(set)
-	fmt.Println("setSerialized: " + setSerialized)
+	set := Set{Name: tableName, ColumnDefs: columnDefs, Records: records}
+	// setSerialized := SerializeSet(set)
+	// fmt.Println("setSerialized: " + setSerialized)
 
 	return set
 }
@@ -266,10 +268,10 @@ func SelectWhere(table string, colNames []string, whereColName string, whereColV
 	// populate selection by iterating through records
 	for i := 0; i < getAmountOfRecordsInTable(table); i++ {
 		record, _ := reader.ReadString('\n')
-		values := strings.Split(record, "|")
+		records := strings.Split(record, "|")
 
-		if strings.EqualFold(strings.TrimSpace(values[whereColOffset]), strings.TrimSpace(whereColVal)) == false {
-			selection = values[firstColOffset] + "|" + values[secondColOffset]
+		if strings.EqualFold(strings.TrimSpace(records[whereColOffset]), strings.TrimSpace(whereColVal)) == false {
+			selection = records[firstColOffset] + "|" + records[secondColOffset]
 		}
 	}
 
@@ -283,7 +285,7 @@ func SelectWhere(table string, colNames []string, whereColName string, whereColV
 }
 
 // InsertRecord inserts a single record to a table
-func InsertRecord(name string, values []string) error {
+func InsertRecord(name string, records []string) error {
 
 	// Open the table in append mode
 	f, err := os.OpenFile(path+database+"/"+name, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -294,12 +296,12 @@ func InsertRecord(name string, values []string) error {
 
 	writeBuffer += "\n"
 
-	// construct new record from values
-	for i := 0; i < len(values); i++ {
+	// construct new record from records
+	for i := 0; i < len(records); i++ {
 		if i > 0 {
 			writeBuffer += "|"
 		}
-		writeBuffer += values[i]
+		writeBuffer += records[i]
 	}
 
 	// write the new record to the end of the table
@@ -340,20 +342,20 @@ func UpdateRecord(table string, whereCol string, whereValue string, toCol string
 
 		// read record and split by colVals
 		record, _ := reader.ReadString('\n')
-		values := strings.Split(record, "|")
+		records := strings.Split(record, "|")
 
 		// for each colVal in record
-		for j := range values {
+		for j := range records {
 
 			// if colVal matches whereValue
-			if strings.EqualFold(strings.TrimSpace(values[j]), strings.TrimSpace(whereValue)) {
+			if strings.EqualFold(strings.TrimSpace(records[j]), strings.TrimSpace(whereValue)) {
 
 				// replace colVal with toValue
-				newValues := values
-				newValues[toColOffset] = toValue
+				newRecords := records
+				newRecords[toColOffset] = toValue
 
 				// rebuild record
-				newRecord := strings.Join(newValues, "|")
+				newRecord := strings.Join(newRecords, "|")
 
 				if strings.Contains(newRecord, "\n") == false {
 					newRecord += "\n"
@@ -407,7 +409,7 @@ func DeleteRecord(table string, whereCol string, whereValue string, comparator s
 
 		// read record and split by colVals
 		record, _ := reader.ReadString('\n')
-		values := strings.Split(record, "|")
+		records := strings.Split(record, "|")
 
 		var whereColOffset int
 		for i := range colNames {
@@ -417,16 +419,16 @@ func DeleteRecord(table string, whereCol string, whereValue string, comparator s
 		}
 
 		// for each colVal in record
-		for j := range values {
+		for j := range records {
 
 			// if colVal matches whereValue
 			if strings.EqualFold(strings.TrimSpace(comparator), "GREATER_THAN") {
 
 				if j == whereColOffset {
-					curVal := strings.TrimSpace(values[j])
+					curVal := strings.TrimSpace(records[j])
 					whereVal := strings.TrimSpace(whereValue)
 
-					// parse existing values into floats to allow comparison
+					// parse existing records into floats to allow comparison
 					curValFloat, err := strconv.ParseFloat(curVal, 32)
 					if err != nil {
 						fmt.Println(err)
@@ -448,7 +450,7 @@ func DeleteRecord(table string, whereCol string, whereValue string, comparator s
 
 			} else if strings.EqualFold(strings.TrimSpace(comparator), "EQUALS") {
 
-				if strings.EqualFold(strings.TrimSpace(values[j]), strings.TrimSpace(whereValue)) {
+				if strings.EqualFold(strings.TrimSpace(records[j]), strings.TrimSpace(whereValue)) {
 					removeRecord(table, record)
 					recordsModified++
 				}

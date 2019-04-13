@@ -62,7 +62,7 @@ var Types = map[string]string{
 	"INSERT":          "INSERT",
 	"SELECT":          "SELECT",
 	"SELECT_INNER":    "SELECT_INNER",
-	"SELECT_OUTER":    "SELECT_OUTER",
+	"SELECT_LEFT":    "SELECT_LEFT",
 	"SELECT_MULTIPLE": "SELECT_MULTIPLE",
 	"UPDATE":          "UPDATE",
 	"DELETE":          "DELETE",
@@ -239,7 +239,7 @@ func parseSelect(statement tokenizer.Statement) tokenizer.Statement {
 					setSpecialNameIfTokenExists(statement, 13, specialNames["SET_NAME"])
 					setSpecialNameIfTokenExists(statement, 14, specialNames["SET_COL_NAME"])
 				} else if strings.EqualFold(statement.Tokens[5].Special, "left") {
-					statement.Type = Types["SELECT_OUTER"]
+					statement.Type = Types["SELECT_LEFT"]
 					setSpecialNameIfTokenExists(statement, 5, specialNames["LEFT"])
 					setSpecialNameIfTokenExists(statement, 6, specialNames["OUTER"])
 					setSpecialNameIfTokenExists(statement, 7, specialNames["JOIN"])
@@ -252,7 +252,7 @@ func parseSelect(statement tokenizer.Statement) tokenizer.Statement {
 					setSpecialNameIfTokenExists(statement, 14, specialNames["SET_NAME"])
 					setSpecialNameIfTokenExists(statement, 15, specialNames["SET_COL_NAME"])
 				} else {
-					statement.Type = Types["SELECT_MULTIPLE"]
+					statement.Type = Types["SELECT_INNER"]
 					setSpecialNameIfTokenExists(statement, 5, specialNames["TABLE_NAME"])
 					setSpecialNameIfTokenExists(statement, 6, specialNames["SET_NAME"])
 					setSpecialNameIfTokenExists(statement, 7, specialNames["WHERE"])

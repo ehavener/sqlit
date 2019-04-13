@@ -7,7 +7,7 @@ package generator
 
 import (
 	"errors"
-	"fmt"
+	// "fmt"
 	"sqlit/diskio"
 	"sqlit/parser"
 	"sqlit/tokenizer"
@@ -42,10 +42,8 @@ func Generate(statement tokenizer.Statement) Operation {
 		operation = generateSelect(statement)
 	case parser.Types["SELECT_INNER"]:
 		operation = generateSelectInnerJoin(statement)
-	case parser.Types["SELECT_OUTER"]:
-		operation = generateSelectOuterJoin(statement)
-	case parser.Types["SELECT_MULTIPLE"]:
-		operation = generateSelectMultiple(statement)
+	case parser.Types["SELECT_LEFT"]:
+		operation = generateSelectLeftJoin(statement)
 	case parser.Types["INSERT"]:
 		operation = generateInsert(statement)
 	case parser.Types["UPDATE"]:
@@ -232,106 +230,151 @@ func generateSelect(statement tokenizer.Statement) Operation {
 	return Operation{Assert: assert, Invoke: invoke}
 }
 
-func generateSelectMultiple(statement tokenizer.Statement) Operation {
-
-	// firstTableName := getFirstTokenOfName(statement, "TABLE_NAME")
-	// firstTableSetName := getFirstTokenOfName(statement, "SET_NAME")
-	// firstTableSetWhereCol := getFirstTokenOfName(statement, "SET_COL_NAME")
-
-	secondTableName := getSecondTokenOfName(statement, "TABLE_NAME")
-	// secondTableSetName := getSecondTokenOfName(statement, "SET_NAME")
-	// secondTableSetWhereColName := getSecondTokenOfName(statement, "SET_COL_NAME")
-
-	assert := func() error {
-		return nil
-	}
-
-	invoke := func() (string, error) {
-		var result string
-
-		// if clause == "ALL" {
-		// 	result = diskio.SelectAll(name)
-		// } else {
-		// 	name := getFirstTokenOfName(statement, "TABLE_NAME")
-
-		// var colNames []string
-
-		// colNames = append(colNames, getFirstTokenOfName(statement, "COL_NAME"))
-		// colNames = append(colNames, getSecondTokenOfName(statement, "COL_NAME"))
-
-		// whereColName := getThirdTokenOfName(statement, "COL_NAME")
-		// whereColVal := getFirstTokenOfName(statement, "COL_VALUE")
-
-		// colNames = removeCommas(colNames)
-
-		set := diskio.SelectTest(secondTableName)
-		result = diskio.SerializeSet(set)
-
-		fmt.Println(result)
-
-		// }
-		return result, nil
-	}
-
-	return Operation{Assert: assert, Invoke: invoke}
-}
-
 func generateSelectInnerJoin(statement tokenizer.Statement) Operation {
 
+	leftTableName := getFirstTokenOfName(statement, "TABLE_NAME")
+	rightTableName := getSecondTokenOfName(statement, "TABLE_NAME")
+
 	assert := func() error {
 		return nil
 	}
 
 	invoke := func() (string, error) {
-		// select where from
-		firstTableName := getFirstTokenOfName(statement, "TABLE_NAME")
-		secondTableName := getSecondTokenOfName(statement, "TABLE_NAME")
+		setOne := diskio.SelectSet(leftTableName)
+		setTwo := diskio.SelectSet(rightTableName)
+		innerJoinOfSets := InnerJoin(setOne, setTwo, "id", "employeeID")
 
-		firstSetName := getFirstTokenOfName(statement, "TABLE_NAME")
-		secondSetName := getSecondTokenOfName(statement, "TABLE_NAME")
+		result := diskio.SerializeSet(innerJoinOfSets)
 
-		var firstSet string
-		var secondSet string
-
-		firstSet = diskio.SelectAll(firstTableName)
-		secondSet = diskio.SelectAll(secondTableName)
-
-		fmt.Println(firstSetName + secondSetName + firstSet + secondSet)
-
-		var result string
 		return result, nil
 	}
 
 	return Operation{Assert: assert, Invoke: invoke}
 }
 
-func generateSelectOuterJoin(statement tokenizer.Statement) Operation {
+func generateSelectLeftJoin(statement tokenizer.Statement) Operation {
+	leftTableName := getFirstTokenOfName(statement, "TABLE_NAME")
+	rightTableName := getSecondTokenOfName(statement, "TABLE_NAME")
 
 	assert := func() error {
 		return nil
 	}
 
 	invoke := func() (string, error) {
-		// select where from
-		firstTableName := getFirstTokenOfName(statement, "TABLE_NAME")
-		secondTableName := getSecondTokenOfName(statement, "TABLE_NAME")
-
-		firstSetName := getFirstTokenOfName(statement, "TABLE_NAME")
-		secondSetName := getSecondTokenOfName(statement, "TABLE_NAME")
-
-		var firstSet string
-		var secondSet string
-
-		firstSet = diskio.SelectAll(firstTableName)
-		secondSet = diskio.SelectAll(secondTableName)
-
-		fmt.Println(firstSetName + secondSetName + firstSet + secondSet)
-
-		var result string
+		setOne := diskio.SelectSet(leftTableName)
+		setTwo := diskio.SelectSet(rightTableName)
+		leftJoinOfSets := LeftJoin(setOne, setTwo, "id", "employeeID")
+		result := diskio.SerializeSet(leftJoinOfSets)
 		return result, nil
 	}
 
 	return Operation{Assert: assert, Invoke: invoke}
+}
+
+// InnerJoin ...
+func InnerJoin(setOne diskio.Set, setTwo diskio.Set, setOneColName string, setTwoColName string) diskio.Set {
+	var columnDefs []diskio.ColumnDef
+
+	for _, columnDef := range setOne.ColumnDefs {
+		columnDefs = append(columnDefs, columnDef)
+	}
+
+	for _, columnDef := range setTwo.ColumnDefs {
+		columnDefs = append(columnDefs, columnDef)
+	}
+
+	var setOneColIndex int
+	var setTwoColIndex int
+
+	for index, columnDef := range setOne.ColumnDefs {
+		if columnDef.ColumnName == setOneColName {
+			setOneColIndex = index
+		}
+	}
+
+	for index, columnDef := range setTwo.ColumnDefs {
+		if columnDef.ColumnName == setTwoColName {
+			setTwoColIndex = index
+		}
+	}
+
+	records := make([][]string, 5)
+	recordsRowIndex := 0
+
+	for _, setOneRecords := range setOne.Records {
+		for _, setTwoRecords := range setTwo.Records {
+			if setOneRecords[setOneColIndex] == setTwoRecords[setTwoColIndex] {
+				records[recordsRowIndex] = make([]string, 4)
+				records[recordsRowIndex][0] = setOneRecords[0]
+				records[recordsRowIndex][1] = setOneRecords[1]
+				records[recordsRowIndex][2] = setTwoRecords[0]
+				records[recordsRowIndex][3] = setTwoRecords[1]
+				recordsRowIndex++
+			}
+		}
+	}
+
+	set := diskio.Set{Name: "inner-join", ColumnDefs: columnDefs, Records: records}
+
+	return set
+}
+
+// LeftJoin ...
+func LeftJoin(leftSet diskio.Set, rightSet diskio.Set, leftSetColName string, rightSetColName string) diskio.Set {
+	innerJoinOfSets := InnerJoin(leftSet, rightSet, leftSetColName, rightSetColName)
+
+	var columnDefsOfSets []diskio.ColumnDef
+
+	for _, columnDef := range leftSet.ColumnDefs {
+		columnDefsOfSets = append(columnDefsOfSets, columnDef)
+	}
+
+	for _, columnDef := range rightSet.ColumnDefs {
+		columnDefsOfSets = append(columnDefsOfSets, columnDef)
+	}
+
+	var leftSetColIndex int
+	var rightSetColIndex int
+
+	for index, columnDef := range leftSet.ColumnDefs {
+		if columnDef.ColumnName == leftSetColName {
+			leftSetColIndex = index
+		}
+	}
+
+	for index, columnDef := range rightSet.ColumnDefs {
+		if columnDef.ColumnName == rightSetColName {
+			rightSetColIndex = index
+		}
+	}
+
+	leftExclusiveRecords := make([][]string, 5)
+	leftExclusiveRecordsTailRowIndex := -1
+
+	for _, leftSetRowRecord := range leftSet.Records {
+		leftExclusive := true
+
+		for _, rightSetRowRecord := range rightSet.Records {
+			if leftSetRowRecord[leftSetColIndex] == rightSetRowRecord[rightSetColIndex] {
+				leftExclusive = false
+			}
+		}
+
+		if leftExclusive == true {
+			leftExclusiveRecordsTailRowIndex++
+			leftExclusiveRecords[leftExclusiveRecordsTailRowIndex] = make([]string, 4)
+			leftExclusiveRecords[leftExclusiveRecordsTailRowIndex][0] = leftSetRowRecord[0]
+			leftExclusiveRecords[leftExclusiveRecordsTailRowIndex][1] = leftSetRowRecord[1]
+			leftExclusiveRecords[leftExclusiveRecordsTailRowIndex][2] = ""
+			leftExclusiveRecords[leftExclusiveRecordsTailRowIndex][3] = ""
+		}
+	}
+
+	leftJoinRecords := append(innerJoinOfSets.Records, leftExclusiveRecords...)
+
+	leftJoinOfSets := diskio.Set{Name: "left-join", ColumnDefs: columnDefsOfSets, Records: leftJoinRecords}
+
+	return leftJoinOfSets
 }
 
 func generateInsert(statement tokenizer.Statement) Operation {
