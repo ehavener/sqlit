@@ -39,6 +39,8 @@ type Statement struct {
 // TokenizeStatement breaks a string of SQL into a statement
 func TokenizeStatement(rawStatement string) Statement {
 	fmt.Println(rawStatement)
+	rawStatement = strings.Replace(rawStatement, "(", " ", 1)
+
 	rawWords := strings.Fields(rawStatement)
 
 	tokens := make([]Token, 0, len(rawWords))

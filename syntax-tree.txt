@@ -1,0 +1,43 @@
+CREATE 
+  DATABASE 
+    <database-name>;
+
+
+USE
+  <database-name>;
+
+
+CREATE
+  TABLE
+    <table-name>(<column-name> <type-name>, <column-name> <type-name>);
+
+
+INSERT
+  INTO
+    <table-name>
+      values(<value>, <value>);
+
+
+SELECT
+  ALL
+    FROM
+      <table-name>;
+
+      <table-name> <set-name>, <table-name> <set-name>
+        WHERE 
+          <set-name>.<column-name> EQUALS <set-name>.<column-name>;
+
+      <table-name> <set-name> <join-clause> <table-name> <set-name>
+        ON
+          <set-name>.<column-name> EQUALS <set-name>.<column-name>;
+
+
+UPDATE 
+  <table-name>
+    set
+      <col-name> EQUALS <value> WHERE <col-name> EQUALS <value>
+
+BEGIN
+  TRANSACTION;
+
+COMMIT;
