@@ -5,6 +5,7 @@
 package parser
 
 import (
+	"fmt"
 	"sqlit/tokenizer"
 	"strings"
 )
@@ -39,6 +40,8 @@ var specialNames = map[string]string{
 	"GREATER_THAN":  "GREATER_THAN",
 	"COL_VALUE":     "COL_VALUE",
 	"WHERE":         "WHERE",
+	"INTO":          "INTO",
+	"VALUES":        "VALUES",
 }
 
 // Types are general classes for statements
@@ -234,19 +237,24 @@ func parseSelect(statement tokenizer.Statement) tokenizer.Statement {
 }
 
 func parseInsert(statement tokenizer.Statement) tokenizer.Statement {
+
 	if strings.EqualFold(statement.Tokens[1].Special, "into") {
 		setSpecialNameIfTokenExists(statement, 1, specialNames["INTO"])
 	}
 
 	setSpecialNameIfTokenExists(statement, 2, specialNames["TABLE_NAME"])
 
-	for i := 3; i < len(statement.Tokens); i++ {
+	setSpecialNameIfTokenExists(statement, 3, specialNames["VALUES"])
+
+	fmt.Println("")
+
+	for i := 4; i < len(statement.Tokens); i++ {
 		setSpecialNameIfTokenExists(statement, i, specialNames["VALUE"])
 	}
 
 	// @in		values(1,	'Gizmo',  19.99);
 	// @out 	(1,	'Gizmo',  19.99);
-	statement.Tokens[3].Special = strings.Replace(statement.Tokens[3].Special, "values", "", 1)
+	// statement.Tokens[3].Special = strings.Replace(statement.Tokens[3].Special, "values", "", 1)
 
 	return statement
 }

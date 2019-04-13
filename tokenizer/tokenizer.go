@@ -39,7 +39,10 @@ type Statement struct {
 // TokenizeStatement breaks a string of SQL into a statement
 func TokenizeStatement(rawStatement string) Statement {
 	fmt.Println(rawStatement)
-	rawStatement = strings.Replace(rawStatement, "(", " ", 1)
+
+	// format PA3 & PA4
+	rawStatement = strings.Replace(rawStatement, "(", " (", 1)
+	rawStatement = strings.Replace(rawStatement, ",", ", ", 1)
 
 	rawWords := strings.Fields(rawStatement)
 
