@@ -34,7 +34,7 @@ func main() {
 
 	createTmpDirectory()
 
-	cleanPtr = flag.Bool("clean", false, "deletes all previously created databases in sqlit/tmp")
+	cleanPtr = flag.Bool("clean", true, "deletes all previously created databases in sqlit/tmp")
 
 	DebugPtr = flag.Bool("debug", false, "displays debugging info")
 

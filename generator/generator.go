@@ -304,12 +304,12 @@ func InnerJoin(setOne diskio.Set, setTwo diskio.Set, setOneColName string, setTw
 	for _, setOneRecords := range setOne.Records {
 		for _, setTwoRecords := range setTwo.Records {
 			if setOneRecords[setOneColIndex] == setTwoRecords[setTwoColIndex] {
+				recordsRowIndex++
 				records[recordsRowIndex] = make([]string, 4)
 				records[recordsRowIndex][0] = setOneRecords[0]
 				records[recordsRowIndex][1] = setOneRecords[1]
 				records[recordsRowIndex][2] = setTwoRecords[0]
 				records[recordsRowIndex][3] = setTwoRecords[1]
-				recordsRowIndex++
 			}
 		}
 	}

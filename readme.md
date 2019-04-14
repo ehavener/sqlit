@@ -95,12 +95,20 @@ SelectWhere() will
 
 ## Programming Assignment 3: Table Joins
 
-A new data structure is added, Sets. 
+### A new data structure is added, Sets.
 
-- implement table joins using techniques we discussed in the class (e.g., nested loop)
-  - nestedloop, index or mergesort
-- clearly explain how your program joins tuples from two source tables
-- how you implement different joins.
+Sets contain a 2D matrix of column values as well as a 1D matrix of column definitions. Sets make it easier to implement in-memory operations like joins. Along with them are helper methods to translate between structured and stringified data.
+
+
+### An inner join is preformed using nested loops.
+
+First, the column definitions are read from the table. They're then concatonated to create the new column definition for our join set. The indicies of the clause columns (e.g. id and employee id) are stored, as well as their original indicies. We then completely iterate through both tables with nested for loops. If two column values pass the given expression (in this case just ==), then we allocate space for and construct a new record in our join set. This record consists of all other values in the matching records, in line with our concatonated column defs. The set is then returned to be serialized and output.
+
+
+### A left (outer) join simply extends an inner join.
+
+An outer join is preformed by first inner-joining the two tables. The inner-join set's records are then iterated though again, and unmatched records from the leftmost table are appended to the end of the set.
+
 
 ## Resources
 
