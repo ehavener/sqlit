@@ -93,7 +93,7 @@ SelectWhere() will
 - read through a table, accumulating the values at the specified columns which pass the clause
 - output the temporary table
 
-## Programming Assignment 3: Table Joins
+## Table Joins (PA3)
 
 ### A new data structure is added, Sets.
 
