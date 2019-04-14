@@ -102,12 +102,12 @@ Sets contain a 2D matrix of column values as well as a 1D matrix of column defin
 
 ### An inner join is preformed using nested loops.
 
-First, the column definitions are read from the table. They're then concatonated to create the new column definition for our join set. The indicies of the clause columns (e.g. id and employee id) are stored, as well as their original indicies. We then completely iterate through both tables with nested for loops. If two column values pass the given expression (in this case just ==), then we allocate space for and construct a new record in our join set. This record consists of all other values in the matching records, in line with our concatonated column defs. The set is then returned to be serialized and output.
+First, the column definitions are read from the table. They're then concatenated to create a new column definition for our join set. The new horizontal indices of the clause columns (e.g. id and employee id) are stored, as well as their original table indices. We then completely iterate through both tables with nested for loops, row by row. If two  values pass the given expression (in this case just ==), then we allocate space for and construct a new record in our join set. This record consists of all other values in the matching records, their offsets adjusted to match our concatenated column defs. The set is then returned to be serialized and output. This is approximately O(n^2) where n is every record in both tables which is not great and could certainly be improved upon.
 
 
 ### A left (outer) join simply extends an inner join.
 
-An outer join is preformed by first inner-joining the two tables. The inner-join set's records are then iterated though again, and unmatched records from the leftmost table are appended to the end of the set.
+An outer join is preformed by first inner-joining the two tables. The inner-join set's records are then iterated though again, and unmatched records from the leftmost table are appended to the end of the set. A  real world implementation would probably use a specialized algorithm, one that populates the join's columns individually. It may for example, allow the leftmost set's values to bypass the condition and copy them to the set intermittently, sorting them to the end afterwards. Another, better alternative would be to store the indicies of unpaired left columns during the inner join to be appended in O(n) afterwards.
 
 
 ## Resources

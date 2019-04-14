@@ -1,7 +1,7 @@
 /* UNR CS 457 | SPRING 2019 | emerson@nevada.unr.edu */
 
 // Package diskio is a library of ideally-atomic operations
-// used on persisted databases and tables.
+// used on persisted databases and tables. It also assists with in-mem representations.
 package diskio
 
 import (
