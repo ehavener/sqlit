@@ -490,7 +490,6 @@ func getTableColNames(table string) []string {
 }
 
 func replaceRecord(table string, record string, newRecord string) {
-	lockTable(table)
 
 	// open up another instance of table file
 	input, err := ioutil.ReadFile(path + database + "/" + table)
@@ -507,13 +506,9 @@ func replaceRecord(table string, record string, newRecord string) {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-
-	unlockTable(table)
 }
 
 func removeRecord(table string, record string) {
-	lockTable(table)
-
 	// open up another instance of table file
 	input, err := ioutil.ReadFile(path + database + "/" + table)
 	if err != nil {
@@ -529,8 +524,6 @@ func removeRecord(table string, record string) {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-
-	unlockTable(table)
 }
 
 func getAmountOfRecordsInTable(table string) int {
@@ -543,17 +536,69 @@ func getAmountOfRecordsInTable(table string) int {
 	return recordCount
 }
 
-func lockTable(table string) {}
+// LockTable ...
+func LockTable(tableName string) {
+	f, err := os.Create(path + database + "/" + tableName + ".lock")
+	check(err)
 
-func unlockTable(table string) {}
+	defer f.Close()
 
-func dropTable() {}
+	f.WriteString(strconv.Itoa(os.Getpid()))
+	f.WriteString("\n")
+}
 
-func open() {}
+// UnlockTable ...
+func UnlockTable(tableName string) {
+	err := os.Remove(path + database + "/" + tableName + ".lock")
+	check(err)
+}
 
-func commit() {}
+// CheckIfTableIsLocked ...
+func CheckIfTableIsLocked(tableName string) bool {
+	_, err := os.Stat(path + database + "/" + tableName + ".lock")
 
-func close() {}
+	if os.IsNotExist(err) {
+		return false
+	}
+
+	return true
+}
+
+// CheckIfTableIsLockedByOtherProcess ...
+func CheckIfTableIsLockedByOtherProcess(tableName string) bool {
+	_, err := os.Stat(path + database + "/" + tableName + ".lock")
+
+	if os.IsNotExist(err) {
+		return false
+	} else {
+		// open table file
+		f, err := os.Open(path + database + "/" + tableName + ".lock")
+		check(err)
+		defer f.Close()
+
+		// open reader on lock file contents
+		reader := bufio.NewReader(f)
+		str, err := reader.ReadString('\n')
+		check(err)
+
+		// if the process ID stored in the lock file is the same, it's locked by this process so we can ignore it
+		if str == strconv.Itoa(os.Getpid()) {
+			return false
+		} else {
+			return true
+		}
+	}
+
+	return true
+}
+
+// func dropTable() {}
+
+// func open() {}
+
+// func commit() {}
+
+// func close() {}
 
 func check(e error) {
 	if e != nil {

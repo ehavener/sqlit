@@ -15,7 +15,7 @@ type Token struct {
 }
 
 // Names are general classes for tokens
-var Names = [12]string{
+var Names = [14]string{
 	"CREATE",
 	"DROP",
 	"USE",
@@ -27,6 +27,8 @@ var Names = [12]string{
 	"SELECT",
 	"UPDATE",
 	"LITERAL",
+	"BEGIN",
+	"COMMIT",
 	"special",
 }
 
@@ -78,6 +80,7 @@ func removeInlineComments(rawWords []string) []string {
 
 // TokenizeWord maps a string to a token and classifies it
 func TokenizeWord(word string) Token {
+
 	for _, name := range Names {
 		if strings.EqualFold(word, name) {
 			return Token{Name: name}
@@ -94,6 +97,7 @@ func TokenizeWord(word string) Token {
 // PrintStatement is used to debug statement properties
 func PrintStatement(statement Statement) {
 	fmt.Print("type	", statement.Type, "\n")
+
 	for _, token := range statement.Tokens {
 		PrintToken(token)
 		fmt.Print("\n")

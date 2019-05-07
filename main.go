@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sqlit/diskio"
 	"sqlit/generator"
 	"sqlit/parser"
 	"sqlit/tokenizer"
@@ -22,6 +23,10 @@ var cleanPtr *bool
 // DebugPtr toggles global printing of debugging statements
 var DebugPtr *bool
 
+var inTransactionMode bool
+
+var transactionStack []generator.Operation
+
 const (
 	InfoColor    = "\033[1;34m%s\033[0m"
 	NoticeColor  = "\033[1;36m%s\033[0m"
@@ -31,10 +36,11 @@ const (
 )
 
 func main() {
+	inTransactionMode = false
 
 	createTmpDirectory()
 
-	cleanPtr = flag.Bool("clean", true, "deletes all previously created databases in sqlit/tmp")
+	cleanPtr = flag.Bool("clean", false, "deletes all previously created databases in sqlit/tmp")
 
 	DebugPtr = flag.Bool("debug", false, "displays debugging info")
 
@@ -57,7 +63,15 @@ func launchConsole() {
 
 	fmt.Println("🔥")
 
+	lineNumber := 0
+
 	for {
+		lineNumber++
+		if lineNumber > 31 {
+			fmt.Println("All done.")
+			os.Exit(0)
+		}
+
 		if lastLineWasEmpty == false {
 			fmt.Printf(WarningColor, "sqlit> ")
 		}
@@ -67,6 +81,8 @@ func launchConsole() {
 		line = removeComment(line)
 		line = removeNewline(line)
 		line = removeReturn(line)
+
+		// fmt.Println("line:" + " " + line)
 
 		if strings.EqualFold(".EXIT", line) == true {
 			fmt.Println("All done.")
@@ -101,20 +117,91 @@ func processLine(line string) {
 	// Break our line of input up into tokens
 	statement := tokenizer.TokenizeStatement(line)
 
+	if *DebugPtr {
+		tokenizer.PrintStatement(statement)
+	}
+
 	// Give them some syntactical meaning
 	statement = parser.ParseStatement(statement)
+
+	// interpert transaction mode entry, break if entering
+	if statement.Type == "BEGIN" {
+		inTransactionMode = true
+		fmt.Printf(DebugColor, "Transaction starts.")
+		fmt.Println()
+		return
+	}
+
+	// interpert transaction commit
+	if statement.Type == "COMMIT" {
+
+		// 1. assert that all operations in the transaction stack are valid
+		//	(including table lock checks)
+		//	return on error
+		for _, operation := range transactionStack {
+			err := operation.Assert()
+
+			if err != nil {
+				fmt.Printf(ErrorColor, err)
+				fmt.Println()
+				fmt.Printf(ErrorColor, "Transaction abort.")
+				fmt.Println()
+
+				// empty out our transaction stack
+				transactionStack = []generator.Operation{}
+
+				// unlock all associated resources
+				diskio.UnlockTable("flights")
+
+				return
+			}
+		}
+
+		// 2. invoke all operations in transaction
+		for _, operation := range transactionStack {
+			success, err := operation.Invoke()
+			if err != nil {
+				fmt.Printf(ErrorColor, err)
+				fmt.Println()
+			} else {
+				fmt.Printf(DebugColor, success)
+				fmt.Println()
+			}
+		}
+
+		// empty out our transaction stack
+		transactionStack = []generator.Operation{}
+
+		// unlock all associated resources
+		diskio.UnlockTable("flights")
+
+		return
+	}
 
 	if *DebugPtr {
 		tokenizer.PrintStatement(statement)
 	}
 
 	// Generate a function of assertions and a function of operations for our query
-	operation := generator.Generate(statement)
+	operation := generator.Generate(statement, inTransactionMode)
 
 	// Make sure our query is valid before we request resources
 	err := operation.Assert()
 	if err != nil {
 		fmt.Printf(ErrorColor, err)
+		fmt.Println()
+
+		if inTransactionMode {
+			fmt.Printf(ErrorColor, "Transaction abort.")
+			fmt.Println()
+		}
+
+		return
+	}
+
+	// if we're in transaction mode, and assertions pass, we store the operation on the transaction stack rather then executing it immediately
+	if inTransactionMode {
+		transactionStack = append(transactionStack, operation)
 		return
 	}
 
@@ -122,6 +209,7 @@ func processLine(line string) {
 	success, err := operation.Invoke()
 	if err != nil {
 		fmt.Printf(ErrorColor, err)
+		fmt.Println()
 	} else {
 		fmt.Printf(DebugColor, success)
 		fmt.Println()
@@ -143,6 +231,14 @@ func createTmpDirectory() {
 func removeComment(line string) string {
 	if strings.HasPrefix(line, "--") {
 		return ""
+	}
+
+	if strings.Contains(line, "--") {
+		splitByComment := strings.Split(line, "--")
+		//	fmt.Println("hmm")
+		//	fmt.Println(splitByComment)
+		// fmt.Println(splitByComment[0])
+		return splitByComment[0]
 	}
 
 	return line

@@ -22,7 +22,8 @@ type Operation struct {
 }
 
 // Generate ...
-func Generate(statement tokenizer.Statement) Operation {
+func Generate(statement tokenizer.Statement, inTransactionMode bool) Operation {
+
 	operation := Operation{}
 
 	switch statement.Type {
@@ -47,13 +48,43 @@ func Generate(statement tokenizer.Statement) Operation {
 	case parser.Types["INSERT"]:
 		operation = generateInsert(statement)
 	case parser.Types["UPDATE"]:
-		operation = generateUpdate(statement)
+		operation = generateUpdate(statement, inTransactionMode)
 	case parser.Types["DELETE"]:
 		operation = generateDelete(statement)
+		//	case parser.Types["BEGIN"]:
+		// operation = generateBegin(statement)
+		// 	case parser.Types["COMMIT"]:
+		// operation = generateCommit(statement)
 	}
 
 	return operation
 }
+
+// func generateBegin(statement tokenizer.Statement) Operation {
+
+// 	assert := func() error {
+// 		return nil
+// 	}
+
+// 	invoke := func() (string, error) {
+// 		return "Transaction starts.", nil
+// 	}
+
+// 	return Operation{Assert: assert, Invoke: invoke}
+// }
+
+// func generateCommit(statement tokenizer.Statement) Operation {
+
+// 	assert := func() error {
+// 		return nil
+// 	}
+
+// 	invoke := func() (string, error) {
+// 		return "Attempting to commit transaction.", nil
+// 	}
+
+// 	return Operation{Assert: assert, Invoke: invoke}
+// }
 
 func generateCreateDatabase(statement tokenizer.Statement) Operation {
 	name := getFirstTokenOfName(statement, "DATABASE_NAME")
@@ -378,26 +409,38 @@ func LeftJoin(leftSet diskio.Set, rightSet diskio.Set, leftSetColName string, ri
 }
 
 func generateInsert(statement tokenizer.Statement) Operation {
-	name := getFirstTokenOfName(statement, "TABLE_NAME")
+	tableName := getFirstTokenOfName(statement, "TABLE_NAME")
 	values := getAllTokensOfName(statement, "VALUE")
 	values = removeCommas(values)
 	values = removeOuterParenthesisFromValues(values)
 	values = removeQuotes(values)
 
 	assert := func() error {
-		if diskio.CheckIfAnyDatabaseIsInUse() == false {
-			return errors.New("!Failed to query table " + name + " because no database is in use.")
+		if diskio.CheckIfTableIsLockedByOtherProcess(tableName) == true {
+			return errors.New("Error: Table " + tableName + " is locked!")
+		} else {
+			diskio.LockTable(tableName)
 		}
 
-		if diskio.CheckIfTableExists(name) == false {
-			return errors.New("!Failed to query table " + name + " because it does not exist.")
+		if diskio.CheckIfAnyDatabaseIsInUse() == false {
+			return errors.New("!Failed to query table " + tableName + " because no database is in use.")
+		}
+
+		if diskio.CheckIfAnyDatabaseIsInUse() == false {
+			return errors.New("!Failed to query table " + tableName + " because no database is in use.")
+		}
+
+		if diskio.CheckIfTableExists(tableName) == false {
+			return errors.New("!Failed to query table " + tableName + " because it does not exist.")
 		}
 
 		return nil
 	}
 
 	invoke := func() (string, error) {
-		diskio.InsertRecord(name, values)
+		diskio.UnlockTable(tableName)
+
+		diskio.InsertRecord(tableName, values)
 		result := "1 new record inserted."
 		return result, nil
 	}
@@ -405,8 +448,8 @@ func generateInsert(statement tokenizer.Statement) Operation {
 	return Operation{Assert: assert, Invoke: invoke}
 }
 
-func generateUpdate(statement tokenizer.Statement) Operation {
-	table := getFirstTokenOfName(statement, "TABLE_NAME")
+func generateUpdate(statement tokenizer.Statement, inTransactionMode bool) Operation {
+	tableName := getFirstTokenOfName(statement, "TABLE_NAME")
 	whereCol := getSecondTokenOfName(statement, "COL_NAME")
 	whereValue := getSecondTokenOfName(statement, "COL_VALUE")
 	toCol := getFirstTokenOfName(statement, "COL_NAME")
@@ -416,19 +459,31 @@ func generateUpdate(statement tokenizer.Statement) Operation {
 	toValue = strings.Replace(toValue, "'", "", -1)
 
 	assert := func() error {
-		if diskio.CheckIfAnyDatabaseIsInUse() == false {
-			return errors.New("!Failed to query table " + table + " because no database is in use.")
+		if diskio.CheckIfTableIsLockedByOtherProcess(tableName) == true {
+			return errors.New("!Error: Table " + tableName + " is locked!")
+		} else {
+			diskio.LockTable(tableName)
 		}
 
-		if diskio.CheckIfTableExists(table) == false {
-			return errors.New("!Failed to query table " + table + " because it does not exist.")
+		if diskio.CheckIfAnyDatabaseIsInUse() == false {
+			return errors.New("!Failed to query table " + tableName + " because no database is in use.")
+		}
+
+		if diskio.CheckIfTableExists(tableName) == false {
+			return errors.New("!Failed to query table " + tableName + " because it does not exist.")
+		}
+
+		if inTransactionMode {
+
 		}
 
 		return nil
 	}
 
 	invoke := func() (string, error) {
-		recordsModified := diskio.UpdateRecord(table, whereCol, whereValue, toCol, toValue)
+		diskio.UnlockTable(tableName)
+
+		recordsModified := diskio.UpdateRecord(tableName, whereCol, whereValue, toCol, toValue)
 		result := strconv.Itoa(recordsModified)
 		result = result + " record(s) modified."
 		return result, nil

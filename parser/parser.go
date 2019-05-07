@@ -22,6 +22,8 @@ var names = map[string]string{
 	"DELETE":   "DELETE",
 	"UPDATE":   "UPDATE",
 	"LITERAL":  "LITERAL",
+	"BEGIN":    "BEGIN",
+	"COMMIT":   "COMMIT",
 	"special":  "special",
 }
 
@@ -49,25 +51,27 @@ var specialNames = map[string]string{
 	"LEFT":          "LEFT",
 	"OUTER":         "OUTER",
 	"SET_COL_NAME":  "SET_COL_NAME",
+	"BEGIN":         "BEGIN",
+	"COMMIT":        "COMMIT",
 }
 
 // Types are general classes for statements
 var Types = map[string]string{
-	"CREATE_DATABASE":    "CREATE_DATABASE",
-	"DROP_DATABASE":      "DROP_DATABASE",
-	"USE_DATABASE":       "USE_DATABASE",
-	"CREATE_TABLE":       "CREATE_TABLE",
-	"DROP_TABLE":         "DROP_TABLE",
-	"ALTER_TABLE":        "ALTER_TABLE",
-	"INSERT":             "INSERT",
-	"SELECT":             "SELECT",
-	"SELECT_INNER":       "SELECT_INNER",
-	"SELECT_LEFT":        "SELECT_LEFT",
-	"SELECT_MULTIPLE":    "SELECT_MULTIPLE",
-	"UPDATE":             "UPDATE",
-	"DELETE":             "DELETE",
-	"BEGIN_TRANSACTION":  "BEGIN_TRANSACTION",
-	"COMMIT_TRANSACTION": "COMMIT_TRANSACTION",
+	"CREATE_DATABASE": "CREATE_DATABASE",
+	"DROP_DATABASE":   "DROP_DATABASE",
+	"USE_DATABASE":    "USE_DATABASE",
+	"CREATE_TABLE":    "CREATE_TABLE",
+	"DROP_TABLE":      "DROP_TABLE",
+	"ALTER_TABLE":     "ALTER_TABLE",
+	"INSERT":          "INSERT",
+	"SELECT":          "SELECT",
+	"SELECT_INNER":    "SELECT_INNER",
+	"SELECT_LEFT":     "SELECT_LEFT",
+	"SELECT_MULTIPLE": "SELECT_MULTIPLE",
+	"UPDATE":          "UPDATE",
+	"DELETE":          "DELETE",
+	"BEGIN":           "BEGIN",
+	"COMMIT":          "COMMIT",
 }
 
 // ParseStatement ....
@@ -83,6 +87,21 @@ func ParseStatement(statement tokenizer.Statement) tokenizer.Statement {
 
 // inferStatementType infers a statement's general type based on how it begins
 func inferStatementType(statement tokenizer.Statement) tokenizer.Statement {
+
+	if len(statement.Tokens) < 1 {
+		return statement
+	}
+
+	if statement.Tokens[0].Name == names["BEGIN"] {
+		statement.Type = Types["BEGIN"]
+		return statement
+	}
+
+	if statement.Tokens[0].Name == names["COMMIT"] {
+		statement.Type = Types["COMMIT"]
+		return statement
+	}
+
 	if len(statement.Tokens) < 2 {
 		return statement
 	}
@@ -163,8 +182,20 @@ func inferTokenspecialNames(statement tokenizer.Statement) tokenizer.Statement {
 		statement = parseUpdate(statement)
 	case Types["DELETE"]:
 		statement = parseDelete(statement)
+	case Types["BEGIN"]:
+		statement = parseBegin(statement)
+	case Types["COMMIT"]:
+		statement = parseCommit(statement)
 	}
 
+	return statement
+}
+
+func parseBegin(statement tokenizer.Statement) tokenizer.Statement {
+	return statement
+}
+
+func parseCommit(statement tokenizer.Statement) tokenizer.Statement {
 	return statement
 }
 
