@@ -109,6 +109,11 @@ First, the column definitions are read from the table. They're then concatenated
 
 An outer join is preformed by first inner-joining the two tables. The inner-join set's records are then iterated though again, and unmatched records from the leftmost table are appended to the end of the set. A  real world implementation would probably use a specialized algorithm, one that populates the join's columns individually. It may for example, allow the leftmost set's values to bypass the condition and copy them to the set intermittently, sorting them to the end afterwards. Another, better alternative would be to store the indicies of unpaired left columns during the inner join to be appended in O(n) afterwards.
 
+## Locking & Transactions (PA4)
+
+This project introduces locks as a way of ensuring that a sequence of operations are completed atomically, in their defined order, and reversibly. When a begin transaction token is read, the main loop enters "transaction mode". In transaction mode, operations are still asserted as interpreted but are not executed. Instead, they are pushed into a queue. This queue continues to grow until a commit token is read, or an assertion fails. If a commit token is reached without any errors, the operation queue will then be asserted for a second time and then executed as a single transaction. This assertion will lock all resources touched by the transaction. They will then be unlocked upon any error or upon total completion. Any error will also terminate the transaction block.
+
+Locks are persisted as a {{TABLE_NAME}}.lock file at the root database directory. Inside of each .lock is the id of the process that is currently accessing the resource. A shortcoming of my implementation is that if a process is exited while still owning a resource, the lock will not be deleted. This could be fixed rather easily but is unnecessary for this proof of concept.
 
 ## Resources
 
