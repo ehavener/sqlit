@@ -549,8 +549,10 @@ func LockTable(tableName string) {
 
 // UnlockTable ...
 func UnlockTable(tableName string) {
-	err := os.Remove(path + database + "/" + tableName + ".lock")
-	check(err)
+	if CheckIfTableIsLocked(tableName) {
+		err := os.Remove(path + database + "/" + tableName + ".lock")
+		check(err)
+	}
 }
 
 // CheckIfTableIsLocked ...

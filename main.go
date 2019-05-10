@@ -79,6 +79,7 @@ func launchConsole() {
 		line, _ := reader.ReadString('\n')
 
 		line = removeComment(line)
+		line = removeTrailingSpaces(line)
 		line = removeNewline(line)
 		line = removeReturn(line)
 
@@ -175,6 +176,8 @@ func processLine(line string) {
 		// unlock all associated resources
 		diskio.UnlockTable("flights")
 
+		// exit transaction mode
+		inTransactionMode = false
 		return
 	}
 
@@ -254,6 +257,10 @@ func removeNewline(line string) string {
 
 func removeDelimiter(line string) string {
 	return strings.Replace(line, ";", "", -1)
+}
+
+func removeTrailingSpaces(line string) string {
+	return strings.TrimSpace(line)
 }
 
 func includesDelimiter(line string) bool {
